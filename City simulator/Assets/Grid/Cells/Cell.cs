@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 
+[Flags]
 public enum CellOrientation
 {
-    East, West, North, South
+    None = 0, East = 1, West = 2, North = 4, South = 8,
 }
 
 public enum CellType
@@ -16,11 +17,12 @@ public enum CellFeature
 {
     None = 0,
     // Street features
-    SpeedBump = 1 << 0, Crosswalk = 2 << 1, RoadWork = 3 << 2, Potholes = 4 << 3, RoadBlock = 5 << 4,
+    SpeedBump = 1 << 0, Crosswalk = 2 << 1, RoadWork = 3 << 2, Potholes = 4 << 3, RoadBlock = 5 << 4, 
+    IShapedStreet = 6 << 5, LShapedStreet = 7 << 6,
     // Intersection features
-    LShapedIntersection = 6 << 5, XShapedIntersection = 7 << 6, YShapedIntersection = 8 << 7,
+    TShapedIntersection = 8 << 7, XShapedIntersection = 9 << 8,
     // Sidewalk features
-    Bench = 9 << 8, Trees = 10 << 9,
+    Bench = 10 << 9, Trees = 11 << 10,
 }
 
 public static class Cell
@@ -72,6 +74,11 @@ public static class Cell
         CalculateTraversability(_index);
     }
 
+    public static CellFeature GetFeatures(int _index)
+    {
+        return m_Features[_index];
+    }
+
     public static void SetFeature(int _index, CellFeature _featuresBitmap)
     {
         m_Features[_index] = _featuresBitmap;
@@ -96,6 +103,11 @@ public static class Cell
         CalculateTraversability(_index);
     }
 
+    public static CellType GetType(int _index)
+    {
+        return m_Type[_index];
+    }
+
     public static void SetType(int _index, CellType _type, CellFeature _featuresBitmap)
     {
         m_Type[_index] = _type;
@@ -103,6 +115,11 @@ public static class Cell
 
         CalculateTravelCost(_index);
         CalculateTraversability(_index);
+    }
+
+    public static List<Agent> GetOccupants(int _index)
+    {
+        return m_Occupants[_index];
     }
 
     public static void AddOccupant(int _index, Agent _occupant)
@@ -113,6 +130,21 @@ public static class Cell
     public static void RemoveOccupant(int _index, Agent _occupant)
     {
         m_Occupants[_index].Remove(_occupant);
+    }
+
+    public static float GetTravelCost(int _index)
+    {
+        return m_TravelCost[_index];
+    }
+
+    public static AgentType GetTraversableBy(int _index)
+    {
+        return m_TraversableBy[_index];
+    }
+
+    public static CellOrientation GetOrientation(int _index)
+    {
+        return m_Orientation[_index];
     }
 
     private static void CalculateTraversability(int _index)

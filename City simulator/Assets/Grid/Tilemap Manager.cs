@@ -38,7 +38,7 @@ public class TilemapManager : MonoBehaviour
     [SerializeField]
     private Tilemap m_Tilemap;
 
-    void OnValidate()
+    void Awake()
     {
         if (instance != null && instance != this)
         {

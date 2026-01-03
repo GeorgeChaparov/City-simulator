@@ -7,6 +7,6 @@ public class Agent
        Idle, Moving, WaitingOnCrosswalk, WaitingOnTrafficLight
     }
     
-    private Cell m_Destination;
+    private int m_Destination;
     private State m_State = State.Idle;
 }

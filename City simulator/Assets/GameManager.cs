@@ -3,7 +3,7 @@ public class GameManager : MonoBehaviour
 {
     public GameManager instance;
 
-    void OnValidate()
+    void Awake()
     {
         if (instance != null && instance != this)
         {
