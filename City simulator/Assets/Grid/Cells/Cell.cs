@@ -17,12 +17,12 @@ public enum CellFeature
 {
     None = 0,
     // Street features
-    SpeedBump = 1 << 0, Crosswalk = 2 << 1, RoadWork = 3 << 2, Potholes = 4 << 3, RoadBlock = 5 << 4, 
-    IShapedStreet = 6 << 5, LShapedStreet = 7 << 6,
+    SpeedBump = 1 << 0, Crosswalk = 1 << 1, RoadWork = 1 << 2, Potholes = 1 << 3, RoadBlock = 1 << 4, 
+    IShapedStreet = 1 << 5, LShapedStreet = 1 << 6,
     // Intersection features
-    TShapedIntersection = 8 << 7, XShapedIntersection = 9 << 8,
+    TShapedIntersection = 1 << 7, XShapedIntersection = 1 << 8,
     // Sidewalk features
-    Bench = 10 << 9, Trees = 11 << 10,
+    Bench = 1 << 9, Trees = 1 << 10,
 }
 
 public static class Cell
@@ -46,21 +46,23 @@ public static class Cell
     /// <summary> To where is the cell facing. Used to make better decisions for neighbor placing. </summary>
     static private CellOrientation[] m_Orientation;
 
-    static public void Init(int _gridWidth, int _gridHeight)
+    static public void Init()
     {
-        m_Type = new CellType[_gridWidth * _gridHeight];
-        m_BaseTravelCost = new float[_gridWidth * _gridHeight];
-        m_TravelCost = new float[_gridWidth * _gridHeight];
-        m_Occupants = new List<Agent>[_gridWidth * _gridHeight];
+        int width = GridConsts.Width;
+        int height = GridConsts.Height;
+        m_Type = new CellType[width * height];
+        m_BaseTravelCost = new float[width * height];
+        m_TravelCost = new float[width * height];
+        m_Occupants = new List<Agent>[width * height];
 
         for (int i = 0; i < m_Occupants.Length; i++)
         {
             m_Occupants[i] = new List<Agent>();
         }
 
-        m_TraversableBy = new AgentType[_gridWidth * _gridHeight];
-        m_Features = new CellFeature[_gridWidth * _gridHeight];
-        m_Orientation = new CellOrientation[_gridWidth * _gridHeight];
+        m_TraversableBy = new AgentType[width * height];
+        m_Features = new CellFeature[width * height];
+        m_Orientation = new CellOrientation[width * height];
     }
 
     static public void PopulateCell(int _index, CellType _type, int _baseTravelCost, CellFeature _featuresBitmap, CellOrientation _orientation)

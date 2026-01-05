@@ -1,17 +1,17 @@
 using UnityEngine;
 public class GameManager : MonoBehaviour
 {
-    public GameManager instance;
+    public static GameManager Instance { get; private set; }
 
     void Awake()
     {
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
     }
 
