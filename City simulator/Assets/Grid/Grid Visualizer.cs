@@ -36,11 +36,15 @@ public class GridVisualizer : MonoBehaviour
         int x = GridUtils.GetXPos(_index);
         int y = GridUtils.GetYPos(_index);
 
-        Vector3 center = transform.position;
+        Vector3 gridCenter = transform.position;
+        
         int cellSize = GridConsts.CellSize;
         float halfCellSize = cellSize / 2;
-       
-        Vector3 position = new Vector3(center.x + x * cellSize, center.y + y * cellSize, center.z);
+
+        Vector3 gridDownLeftCorner = new Vector3(gridCenter.x - (GridConsts.Width / 2) * cellSize, gridCenter.y - (GridConsts.Height / 2) * cellSize, gridCenter.z);
+        Vector3 gridUpRightCorner = new Vector3(gridCenter.x + (GridConsts.Width / 2) * cellSize, gridCenter.y + (GridConsts.Height / 2) * cellSize, gridCenter.z);
+
+        Vector3 position = new Vector3(gridDownLeftCorner.x + halfCellSize + x * cellSize, gridDownLeftCorner.y + halfCellSize + y * cellSize, gridCenter.z);
 
         float oneFourth = halfCellSize / 2;
         float oneFourthEast = position.x + oneFourth;
@@ -54,6 +58,13 @@ public class GridVisualizer : MonoBehaviour
         float x2 = position.x + halfCellSize;
         float y2 = position.y + halfCellSize;
 
+
+        Gizmos.color = Color.black;
+        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x + GridConsts.Width * cellSize, gridDownLeftCorner.y));
+        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x, gridDownLeftCorner.y + GridConsts.Height * cellSize));
+        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x - GridConsts.Width * cellSize, gridUpRightCorner.y));
+        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x, gridUpRightCorner.y - GridConsts.Height * cellSize));
+        
 
 
 
@@ -119,13 +130,42 @@ public class GridVisualizer : MonoBehaviour
                             break;
                         case CellOrientation.West:
                             Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2 - cellSize, y2));
-                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 + cellSize));
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 - cellSize));
                             break;
                         case CellOrientation.North:
                             Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 - cellSize));
                             Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
                             break;
                         case CellOrientation.South:
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1, y1 + cellSize));
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2 - cellSize, y2 ));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else if ((_cellFeatures & CellFeature.DeadEnd) != 0)
+                {
+                    Gizmos.color = Color.pink;
+                    switch (_cellOrientation)
+                    {
+                        case CellOrientation.East:
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1, y1 + cellSize));
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2 - cellSize, y2));
+                            break;
+                        case CellOrientation.West:
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2 - cellSize, y2));
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 - cellSize));
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
+                            break;
+                        case CellOrientation.North:
+                            Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 - cellSize));
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1, y1 + cellSize));
+                            break;
+                        case CellOrientation.South:
+                            Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1, y1 + cellSize));
                             Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2 - cellSize, y2));
                             Gizmos.DrawLine(new Vector2(x2, y2), new Vector2(x2, y2 - cellSize));
                             break;

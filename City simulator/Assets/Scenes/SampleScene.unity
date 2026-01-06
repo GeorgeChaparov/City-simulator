@@ -194,13 +194,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41c653d111076e44fa8db11f3f291dad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_GridSize: 20
-  m_CellSize: 30
+  m_GridSize: 100
+  m_CellSize: 50
   m_MinStreetsWithoutIntersection: 10
-  m_MaxStreetsWithoutIntersection: 20
+  m_MaxStreetsWithoutIntersection: 15
   m_MaxTurnsBetweenIntersection: 2
-  m_MinStreetsBetweenTurns: 0
+  m_MinStreetsBetweenTurns: 2
   m_MinStreetsAfterIntersectionBeforeTurn: 4
+  m_EmptyCellsBetweenStreets: 2
 --- !u!4 &353399498
 Transform:
   m_ObjectHideFlags: 0

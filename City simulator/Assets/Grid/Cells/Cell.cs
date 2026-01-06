@@ -18,11 +18,11 @@ public enum CellFeature
     None = 0,
     // Street features
     SpeedBump = 1 << 0, Crosswalk = 1 << 1, RoadWork = 1 << 2, Potholes = 1 << 3, RoadBlock = 1 << 4, 
-    IShapedStreet = 1 << 5, LShapedStreet = 1 << 6,
+    IShapedStreet = 1 << 5, LShapedStreet = 1 << 6, DeadEnd = 1 << 7,
     // Intersection features
-    TShapedIntersection = 1 << 7, XShapedIntersection = 1 << 8,
+    TShapedIntersection = 1 << 8, XShapedIntersection = 1 << 9,
     // Sidewalk features
-    Bench = 1 << 9, Trees = 1 << 10,
+    Bench = 1 << 10, Trees = 1 << 11,
 }
 
 public static class Cell

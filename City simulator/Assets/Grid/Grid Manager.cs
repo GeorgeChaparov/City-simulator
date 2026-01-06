@@ -25,6 +25,9 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private int m_MinStreetsAfterIntersectionBeforeTurn = 0;
 
+    [SerializeField]
+    private int m_EmptyCellsBetweenStreets = 1;
+
     public static GridManager Instance { get; private set; }
 
     private void Awake()
@@ -50,10 +53,10 @@ public class GridManager : MonoBehaviour
             GridConsts.Width = GridConsts.Height = m_GridSize;
 
             Cell.Init();
-            GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection,
-                m_MaxTurnsBetweenIntersection, m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn);
+            GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxTurnsBetweenIntersection, 
+                m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn, m_EmptyCellsBetweenStreets);
 
-            StartCoroutine(GridGenerator.Generate());
+            GridGenerator.Generate();
         }
     }
 }
