@@ -4,11 +4,11 @@ public class GridUtils
 {
     public static int GetXPos(int _index)
     {
-        return _index % GridConsts.Width;
+        return _index % GridGlobals.Width;
     }
 
     public static int GetYPos(int _index)
     {
-        return (_index % (GridConsts.Width * GridConsts.Height)) / GridConsts.Width;
+        return (_index % (GridGlobals.Width * GridGlobals.Height)) / GridGlobals.Width;
     }
 }

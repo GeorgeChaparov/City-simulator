@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -44,19 +42,21 @@ public class GridManager : MonoBehaviour
 
     void Update()
     {
-        GridConsts.CellSize = m_CellSize;
+        GridGlobals.CellSize = m_CellSize;
 
         if (Input.GetKeyUp(KeyCode.R))
         {
-            GridConsts.Reset();
+            GridGlobals.Reset();
 
-            GridConsts.Width = GridConsts.Height = m_GridSize;
+            GridGlobals.Width = GridGlobals.Height = m_GridSize;
 
             Cell.Init();
             GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxTurnsBetweenIntersection, 
                 m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn, m_EmptyCellsBetweenStreets);
 
-            GridGenerator.Generate();
+            StartCoroutine(GridGenerator.Generate());
+
+            GridVisualizer.Instance.Init();
         }
     }
 }

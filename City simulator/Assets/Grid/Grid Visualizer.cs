@@ -2,9 +2,15 @@ using System.Collections.Generic;
 
 using UnityEngine;
 
+using static UnityEditor.PlayerSettings;
+
 public class GridVisualizer : MonoBehaviour
 {
     public static GridVisualizer Instance { get; private set; }
+
+    private Vector3 gridCenter = Vector3.zero;
+    private Vector3 gridDownLeftCorner = Vector3.zero;
+    private Vector3 gridUpRightCorner = Vector3.zero;
 
     void Awake()
     {
@@ -18,9 +24,30 @@ public class GridVisualizer : MonoBehaviour
         }
     }
 
+    public void Init()
+    {
+        gridCenter = transform.position;
+        gridDownLeftCorner = new Vector3(gridCenter.x - (GridGlobals.Width / 2) * GridGlobals.CellSize, gridCenter.y - (GridGlobals.Height / 2) * GridGlobals.CellSize, gridCenter.z);
+        gridUpRightCorner = new Vector3(gridCenter.x + (GridGlobals.Width / 2) * GridGlobals.CellSize, gridCenter.y + (GridGlobals.Height / 2) * GridGlobals.CellSize, gridCenter.z);
+    }
+
     private void OnDrawGizmos()
     {
-        foreach (var cell in GridConsts.StreetAdjacencyList)
+        if (GridGlobals.StreetAdjacencyList == null)
+        {
+            return;
+        }
+
+        // Visualizing the grid itself.
+        Gizmos.color = Color.black;
+        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x + GridGlobals.Width * GridGlobals.CellSize, gridDownLeftCorner.y));
+        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x, gridDownLeftCorner.y + GridGlobals.Height * GridGlobals.CellSize));
+        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x - GridGlobals.Width * GridGlobals.CellSize, gridUpRightCorner.y));
+        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x, gridUpRightCorner.y - GridGlobals.Height * GridGlobals.CellSize));
+
+        
+
+        foreach (var cell in GridGlobals.StreetAdjacencyList)
         {
             int index = cell.Key;
             CellType type = Cell.GetType(index);
@@ -29,20 +56,20 @@ public class GridVisualizer : MonoBehaviour
 
             VisualizeStreet(index, type, orientation, features);
         }
+
+        foreach (var pos in GridGlobals.PositionsToCheck.Item2)
+        {
+            VisualizeCheckedPosition(pos);
+        }
     }
 
     public void VisualizeStreet(int _index, CellType _cellType, CellOrientation _cellOrientation, CellFeature _cellFeatures)
     {
         int x = GridUtils.GetXPos(_index);
         int y = GridUtils.GetYPos(_index);
-
-        Vector3 gridCenter = transform.position;
         
-        int cellSize = GridConsts.CellSize;
+        int cellSize = GridGlobals.CellSize;
         float halfCellSize = cellSize / 2;
-
-        Vector3 gridDownLeftCorner = new Vector3(gridCenter.x - (GridConsts.Width / 2) * cellSize, gridCenter.y - (GridConsts.Height / 2) * cellSize, gridCenter.z);
-        Vector3 gridUpRightCorner = new Vector3(gridCenter.x + (GridConsts.Width / 2) * cellSize, gridCenter.y + (GridConsts.Height / 2) * cellSize, gridCenter.z);
 
         Vector3 position = new Vector3(gridDownLeftCorner.x + halfCellSize + x * cellSize, gridDownLeftCorner.y + halfCellSize + y * cellSize, gridCenter.z);
 
@@ -57,15 +84,6 @@ public class GridVisualizer : MonoBehaviour
 
         float x2 = position.x + halfCellSize;
         float y2 = position.y + halfCellSize;
-
-
-        Gizmos.color = Color.black;
-        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x + GridConsts.Width * cellSize, gridDownLeftCorner.y));
-        Gizmos.DrawLine(gridDownLeftCorner, new Vector2(gridDownLeftCorner.x, gridDownLeftCorner.y + GridConsts.Height * cellSize));
-        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x - GridConsts.Width * cellSize, gridUpRightCorner.y));
-        Gizmos.DrawLine(gridUpRightCorner, new Vector2(gridUpRightCorner.x, gridUpRightCorner.y - GridConsts.Height * cellSize));
-        
-
 
 
         switch (_cellType)
@@ -207,5 +225,26 @@ public class GridVisualizer : MonoBehaviour
             default:
                 break;
         }
+    }
+
+    private void VisualizeCheckedPosition((int x, int y) _pos)
+    {
+        int index = GridGlobals.PositionsToCheck.Item1;
+
+        int x = GridUtils.GetXPos(index);
+        int y = GridUtils.GetYPos(index);
+
+        int cellSize = GridGlobals.CellSize;
+        float halfCellSize = cellSize / 2;
+
+        Vector3 position = new Vector3(gridDownLeftCorner.x + halfCellSize + (x + _pos.x) * cellSize, gridDownLeftCorner.y + halfCellSize + (y + _pos.y) * cellSize, gridCenter.z);
+        Vector3 size = new Vector3(cellSize, cellSize);
+
+        Color color = Color.green;
+
+        color.a = 0.2f;
+
+        Gizmos.color = color;
+        Gizmos.DrawCube(position, size);
     }
 }

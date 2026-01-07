@@ -48,8 +48,8 @@ public static class Cell
 
     static public void Init()
     {
-        int width = GridConsts.Width;
-        int height = GridConsts.Height;
+        int width = GridGlobals.Width;
+        int height = GridGlobals.Height;
         m_Type = new CellType[width * height];
         m_BaseTravelCost = new float[width * height];
         m_TravelCost = new float[width * height];

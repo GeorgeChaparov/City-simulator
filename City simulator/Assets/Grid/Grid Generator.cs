@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-
 using UnityEngine;
 
 public class GridGenerator
@@ -24,7 +23,9 @@ public class GridGenerator
     private static int m_IShapedStreetsCount = 0;
     private static int m_LShapedStreetsCount = 0;
 
-    public static void Init(int _minStreetsWithoutIntersection, int _maxStreetsWithoutIntersection, int _maxTurnsBetweenIntersection, 
+    private static int counter = 0;
+
+    public static void Init(int _minStreetsWithoutIntersection, int _maxStreetsWithoutIntersection, int _maxTurnsBetweenIntersection,
         int _minStreetsBetweenTurns, int _minStreetsAfterIntersectionBeforeTurn, int _emptyCellsBetweenStreets)
     {
         m_MinStreetsWithoutIntersection = _minStreetsWithoutIntersection;
@@ -39,37 +40,116 @@ public class GridGenerator
         m_LShapedStreetsCount = 0;
     }
 
-
-    public static void Generate()
+    private static readonly CellOrientation[,] m_TEastDirectionMask = new CellOrientation[6, 3]
     {
-        int x = Random.Range(0, GridConsts.Width);
-        int y = Random.Range(0, GridConsts.Height);
-        int randomStartIndex = y * GridConsts.Width + x;
+        { CellOrientation.West,  CellOrientation.North, CellOrientation.South },
+        { CellOrientation.West,  CellOrientation.South, CellOrientation.North },
+        { CellOrientation.North, CellOrientation.West,  CellOrientation.South },
+        { CellOrientation.North, CellOrientation.South, CellOrientation.West },
+        { CellOrientation.South, CellOrientation.West,  CellOrientation.North },
+        { CellOrientation.South, CellOrientation.North, CellOrientation.West }
+    };
 
-        CreateStreets(randomStartIndex);
+    private static readonly CellOrientation[,] m_TWestDirectionMask = new CellOrientation[6, 3]
+    {
+        { CellOrientation.East,  CellOrientation.North, CellOrientation.South },
+        { CellOrientation.East,  CellOrientation.South, CellOrientation.North },
+        { CellOrientation.North, CellOrientation.East,  CellOrientation.South },
+        { CellOrientation.North, CellOrientation.South, CellOrientation.East },
+        { CellOrientation.South, CellOrientation.East,  CellOrientation.North },
+        { CellOrientation.South, CellOrientation.North, CellOrientation.East }
+    };
+
+    private static readonly CellOrientation[,] m_TNorthDirectionMask = new CellOrientation[6, 3]
+    {
+        { CellOrientation.East,  CellOrientation.South, CellOrientation.West },
+        { CellOrientation.East,  CellOrientation.West,  CellOrientation.South },
+        { CellOrientation.South, CellOrientation.East,  CellOrientation.West },
+        { CellOrientation.South, CellOrientation.West,  CellOrientation.East },
+        { CellOrientation.West,  CellOrientation.East,  CellOrientation.South },
+        { CellOrientation.West,  CellOrientation.South, CellOrientation.East }
+    };
+
+    private static readonly CellOrientation[,] m_TSouthDirectionMask = new CellOrientation[6, 3]
+    {
+        { CellOrientation.East,  CellOrientation.West,  CellOrientation.North },
+        { CellOrientation.East,  CellOrientation.North, CellOrientation.West },
+        { CellOrientation.West,  CellOrientation.East,  CellOrientation.North },
+        { CellOrientation.West,  CellOrientation.North, CellOrientation.East },
+        { CellOrientation.North, CellOrientation.East,  CellOrientation.West },
+        { CellOrientation.North, CellOrientation.West,  CellOrientation.East }
+    };
+
+    private static readonly (int dx, int dy)[] m_IMaskOffsets = new (int, int)[]
+    {
+                                         (0, 3),
+                                         (0, 2),  (1, 2),
+                                         (0, 1),  (1, 1),  (2, 1), (3, 1),
+        /*I shaped street facing east -> (0, 0)*/ (1, 0),  (2, 0), (3, 0),
+                                         (0, -1), (1, -1), (2, -1), (3, -1),
+                                         (0, -2), (1, -2),
+                                         (0, -3),
+    };
+
+    private static readonly (int dx, int dy)[] m_LMaskOffsets = new (int, int)[]
+    {
+                  (-1, 3),  (0, 3),  (1, 3),
+        (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
+        (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
+        (-2, 0),  (-1, 0),//(0, 0), <- L shaped street facing east
+        (-2, -1), (-1, -1), (0, -1), (1, -1),
+                  (-1, -2), (0, -2), (1, -2),
+    };
+
+    private static readonly (int dx, int dy)[] m_TMaskOffsets = new (int, int)[]
+    {
+                  (-1, 3),  (0, 3),  (1, 3),
+        (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
+        (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
+        (-2, 0),  (-1, 0),//(0, 0), <- T shaped intersection facing east
+        (-2, -1), (-1, -1), (0, -1), (1, -1),
+        (-2, -2), (-1, -2), (0, -2), (1, -2),
+                  (-1, -3), (0, -3), (1, -3),
+    };
+
+    private static readonly (int dx, int dy)[] m_XMaskOffsets = new (int, int)[]
+    {
+        (-3, 3), (-2, 3),  (-1, 3),  (0, 3),  (1, 3),
+        (-3, 2), (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
+        (-3, 1), (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
+        (-3, 0), (-2, 0),  (-1, 0),//(0, 0), <- X shaped intersection facing east
+        (-3, -1), (-2, -1), (-1, -1), (0, -1), (1, -1),
+        (-3, -2), (-2, -2), (-1, -2), (0, -2), (1, -2),
+        (-3, -3), (-2, -3), (-1, -3), (0, -3), (1, -3),
+    };
+
+    public static IEnumerator Generate()
+    {
+        int x = Random.Range(0, GridGlobals.Width);
+        int y = Random.Range(0, GridGlobals.Height);
+        int randomStartIndex = y * GridGlobals.Width + x;
+
+        yield return CreateStreets(randomStartIndex);
 
         Debug.Log($"I shaped: {m_IShapedStreetsCount}");
         Debug.Log($"L shaped: {m_LShapedStreetsCount}");
     }
 
-    private static void CreateStreets(int _startIndex)
+    private static IEnumerator CreateStreets(int _startIndex)
     {
         Stack<int> ToCheck = new Stack<int>();
         int cellCount = 1;
 
         Cell.PopulateCell(_startIndex, CellType.Intersection, 2, CellFeature.XShapedIntersection, CellOrientation.East);
-        GridConsts.StreetAdjacencyList.Add(_startIndex, new List<int>());
+        GridGlobals.StreetAdjacencyList.Add(_startIndex, new List<int>());
 
         ToCheck.Push(_startIndex);
 
         do
         {
-            List<CellOrientation> directionsFromLastCell = new List<CellOrientation>();
-            List<int> indexes = new List<int>();
-
             int lastCellIndex = ToCheck.Pop();
 
-            (indexes, directionsFromLastCell) = CalculateNextPosition(lastCellIndex);
+            CalculateNextPosition(lastCellIndex, out List<int> indexes, out List<CellOrientation> directionsFromLastCell);
 
             if (indexes[0] == m_HIT_END_OF_GRID)
             {
@@ -81,29 +161,31 @@ public class GridGenerator
                 int index = indexes[i];
                 CellOrientation dirFromLastCell = directionsFromLastCell[i];
 
-                if (!GridConsts.StreetAdjacencyList.ContainsKey(index))
+                if (!GridGlobals.StreetAdjacencyList.ContainsKey(index))
                 {
-                    GridConsts.StreetAdjacencyList.Add(index, new List<int>());
+                    GridGlobals.StreetAdjacencyList.Add(index, new List<int>());
                     ToCheck.Push(index);
                 }
 
-                GridConsts.StreetAdjacencyList[index].Add(lastCellIndex);
-                GridConsts.StreetAdjacencyList[lastCellIndex].Add(index);
+                GridGlobals.StreetAdjacencyList[index].Add(lastCellIndex);
+                GridGlobals.StreetAdjacencyList[lastCellIndex].Add(index);
 
                 PopulateNextStreetCell(index, lastCellIndex, dirFromLastCell);
 
                 Debug.Log(++cellCount);
 
+                yield return new WaitUntil(() => GameManager.Instance.counter > counter);
+
+                counter++;
             }
 
         } while (ToCheck.Count != 0);
     }
 
-    private static (List<int>, List<CellOrientation>) CalculateNextPosition(int _index)
+    private static void CalculateNextPosition(int _index, out List<int> positions, out List<CellOrientation> directions)
     {
-        List<CellOrientation> directions = new List<CellOrientation>();
-        List<int> positions = new List<int>();
-
+        directions = new List<CellOrientation>();
+        positions = new List<int>();
         CellOrientation allowedDirections = CalculateAllowedDirections(_index);
 
         if ((allowedDirections & CellOrientation.East) != 0)
@@ -143,7 +225,7 @@ public class GridGenerator
                 case CellOrientation.East:
                     newX++;
 
-                    pos = newY * GridConsts.Width + newX;
+                    pos = newY * GridGlobals.Width + newX;
                     if (GridUtils.GetXPos(pos) < x)
                     {
                         isOutOfBounds = true;
@@ -152,7 +234,7 @@ public class GridGenerator
                 case CellOrientation.West:
                     newX--;
 
-                    pos = newY * GridConsts.Width + newX;
+                    pos = newY * GridGlobals.Width + newX;
                     if (GridUtils.GetXPos(pos) > x)
                     {
                         isOutOfBounds = true;
@@ -171,10 +253,10 @@ public class GridGenerator
 
             if (pos == _index)
             {
-                pos = newY * GridConsts.Width + newX;
+                pos = newY * GridGlobals.Width + newX;
             }
 
-            if (pos < 0 || pos >= GridConsts.Width * GridConsts.Height)
+            if (pos < 0 || pos >= GridGlobals.Width * GridGlobals.Height)
             {
                 isOutOfBounds = true;
             }
@@ -187,7 +269,7 @@ public class GridGenerator
                 continue;
             }
             // Or it's already taken.
-            else if (GridConsts.StreetAdjacencyList.ContainsKey(pos))
+            else if (GridGlobals.StreetAdjacencyList.ContainsKey(pos))
             {
                 directions.RemoveAt(i);
                 --i;
@@ -205,8 +287,6 @@ public class GridGenerator
             // As when creating the intersection, we put on cell in each possible way, there already will be one street. That is why we set the count to -1.
             m_StreetsWithoutIntersectionCount = -1;
         }
-
-        return (positions, directions);
     }
 
     private static CellOrientation CalculateAllowedDirections(int _index)
@@ -386,6 +466,7 @@ public class GridGenerator
             }
 
             /* CALCULATING SHAPE */
+            int randomFeature = 0;
 
             bool choseFeature = false;
             switch (newCellType)
@@ -420,101 +501,14 @@ public class GridGenerator
                         break;
                     }
 
-                    switch (Random.Range(0, 2))
-                    {
-                        // I shaped street.
-                        case 0:
-                            // If straight streets are not possible, we try to make a turn.
-                            if ((possibleStreets & CellFeature.IShapedStreet) == 0)
-                            {
-                                // If turns are not possible, we break the switch.
-                                if ((possibleStreets & CellFeature.LShapedStreet) == 0)
-                                {
-                                    break;
-                                }
-
-                                newCellFeatures = selectFeature(CellFeature.LShapedStreet);
-                                choseFeature = true;
-                                break;
-                            }
-
-                            newCellFeatures = selectFeature(CellFeature.IShapedStreet);
-                            choseFeature = true;
-                            break;
-
-                        // L shaped street.
-                        case 1:
-                            // If turns are not possible, we try to make a straight streets.
-                            if ((possibleStreets & CellFeature.LShapedStreet) == 0)
-                            {
-                                // If straight streets not possible, we break the switch.
-                                if ((possibleStreets & CellFeature.IShapedStreet) == 0)
-                                {
-                                    break;
-                                }
-
-                                newCellFeatures = selectFeature(CellFeature.IShapedStreet);
-                                choseFeature = true;
-                                break;
-                            }
-
-                            newCellFeatures = selectFeature(CellFeature.LShapedStreet);
-                            choseFeature = true;
-                            break;
-                        default:
-                            Debug.LogError("Range unsupported!");
-                            break;
-                    }
-
+                    randomFeature = Random.Range(0, 2);
+                    tryFeatures(CellFeature.IShapedStreet, CellFeature.LShapedStreet);
                     break;
                 case CellType.Intersection:
                     traversalCost = 5;
+                    randomFeature = Random.Range(0, 2);
+                    tryFeatures(CellFeature.XShapedIntersection, CellFeature.TShapedIntersection);
 
-                    switch (Random.Range(0, 2))
-                    {
-                        // X shaped intersection
-                        case 0:
-                            // If X shaped intersection are not possible, we try to make a T shaped intersection.
-                            if ((possibleIntersections & CellFeature.XShapedIntersection) == 0)
-                            {
-                                // If T shaped intersection not possible, we break the switch.
-                                if ((possibleIntersections & CellFeature.TShapedIntersection) == 0)
-                                {
-                                    break;
-                                }
-
-                                newCellFeatures = selectFeature(CellFeature.TShapedIntersection);
-                                choseFeature = true;
-                                break;
-                            }
-
-                            newCellFeatures = selectFeature(CellFeature.XShapedIntersection);
-                            choseFeature = true;
-                            break;
-
-                        // T shaped intersection
-                        case 1:
-                            // If T shaped intersection are not possible, we try to make a X shaped intersection.
-                            if ((possibleIntersections & CellFeature.TShapedIntersection) == 0)
-                            {
-                                // If X shaped intersection not possible, we break the switch.
-                                if ((possibleIntersections & CellFeature.XShapedIntersection) == 0)
-                                {
-                                    break;
-                                }
-
-                                newCellFeatures = selectFeature(CellFeature.XShapedIntersection);
-                                choseFeature = true;
-                                break;
-                            }
-
-                            newCellFeatures = selectFeature(CellFeature.TShapedIntersection);
-                            choseFeature = true;
-                            break;
-                        default:
-                            Debug.LogError("Range unsupported!");
-                            break;
-                    }
                     // -1 is the default value. It shows that we don't have a 90 degrees turn yet.
                     m_LastTurnIndex = -1;
                     m_TurnsBetweenIntersectionCount = 0;
@@ -522,6 +516,49 @@ public class GridGenerator
                 default:
                     Debug.LogError("This cell type is unsupported.");
                     break;
+            }
+
+            // Helper function that chose feature based on random value and if the chosen one is not possible, it tries with the other.
+            void tryFeatures(CellFeature _first, CellFeature _second)
+            {
+                if (randomFeature == 0)
+                {
+                    // If the first feature is not possible, we try with the second.
+                    if ((possibleStreets & _first) == 0)
+                    {
+                        // If the second feature is not possible, we return.
+                        if ((possibleStreets & _second) == 0)
+                        {
+                            return;
+                        }
+
+                        newCellFeatures = selectFeature(_second);
+                        choseFeature = true;
+                        return;
+                    }
+
+                    newCellFeatures = selectFeature(_first);
+                    choseFeature = true;
+                }
+                else
+                {
+                    // If the second feature is not possible, we try with the first.
+                    if ((possibleStreets & _second) == 0)
+                    {
+                        // If the first feature is not possible, we return.
+                        if ((possibleStreets & _first) == 0)
+                        {
+                            return;
+                        }
+
+                        newCellFeatures = selectFeature(_first);
+                        choseFeature = true;
+                        return;
+                    }
+
+                    newCellFeatures = selectFeature(_second);
+                    choseFeature = true;
+                }
             }
 
             if (!choseFeature)
@@ -554,185 +591,70 @@ public class GridGenerator
                     switch (_dirFromLastCell)
                     {
                         case CellOrientation.East:
-                            
-                            // Try west
-                            if (randomRotation == 0)
-                            {
-                                // If the space around west directions is free
-                                if (checkForSpace(CellOrientation.West))
-                                {
-                                    newCellOrientation = CellOrientation.West;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around north directions is free
-                                if (checkForSpace(CellOrientation.North))
-                                {
-                                    newCellOrientation = CellOrientation.North;
-                                    choseOrientation = true;
-                                    break;
-                                }                          
-                            }
-                            // Try north
-                            else
-                            {
-                                // If the space around north directions is free
-                                if (checkForSpace(CellOrientation.North))
-                                {
-                                    newCellOrientation = CellOrientation.North;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around west directions is free
-                                if (checkForSpace(CellOrientation.West))
-                                {
-                                    newCellOrientation = CellOrientation.West;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            possibleStreets ^= CellFeature.LShapedStreet;
+                            tryDirections(CellOrientation.West, CellOrientation.North);
                             break;
                         case CellOrientation.West:
-
-                            // Try south
-                            if (randomRotation == 0)
-                            {
-                                // If the space around south directions is free
-                                if (checkForSpace(CellOrientation.South))
-                                {
-                                    newCellOrientation = CellOrientation.South;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around east directions is free
-                                if (checkForSpace(CellOrientation.East))
-                                {
-                                    newCellOrientation = CellOrientation.East;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-                            // Try east
-                            else
-                            {
-                                // If the space around east directions is free
-                                if (checkForSpace(CellOrientation.East))
-                                {
-                                    newCellOrientation = CellOrientation.East;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around south directions is free
-                                if (checkForSpace(CellOrientation.South))
-                                {
-                                    newCellOrientation = CellOrientation.South;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            possibleStreets ^= CellFeature.LShapedStreet;
+                            tryDirections(CellOrientation.South, CellOrientation.East);
                             break;
                         case CellOrientation.North:
-                            // Try south
-                            if (randomRotation == 0)
-                            {
-                                // If the space around south directions is free
-                                if (checkForSpace(CellOrientation.South))
-                                {
-                                    newCellOrientation = CellOrientation.South;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around west directions is free
-                                if (checkForSpace(CellOrientation.West))
-                                {
-                                    newCellOrientation = CellOrientation.West;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-                            // Try west
-                            else
-                            {
-                                // If the space around west directions is free
-                                if (checkForSpace(CellOrientation.West))
-                                {
-                                    newCellOrientation = CellOrientation.West;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around south directions is free
-                                if (checkForSpace(CellOrientation.South))
-                                {
-                                    newCellOrientation = CellOrientation.South;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            possibleStreets ^= CellFeature.LShapedStreet;
+                            tryDirections(CellOrientation.South, CellOrientation.West);
                             break;
                         case CellOrientation.South:
-                            // Try north
-                            if (randomRotation == 0)
-                            {
-                                // If the space around north directions is free
-                                if (checkForSpace(CellOrientation.North))
-                                {
-                                    newCellOrientation = CellOrientation.North;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around east directions is free
-                                if (checkForSpace(CellOrientation.East))
-                                {
-                                    newCellOrientation = CellOrientation.East;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-                            // Try east
-                            else
-                            {
-                                // If the space around east directions is free
-                                if (checkForSpace(CellOrientation.East))
-                                {
-                                    newCellOrientation = CellOrientation.East;
-                                    choseOrientation = true;
-                                    break;
-                                }
-
-                                // If the space around north directions is free
-                                if (checkForSpace(CellOrientation.North))
-                                {
-                                    newCellOrientation = CellOrientation.North;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            possibleStreets ^= CellFeature.LShapedStreet;
-
-                            newCellOrientation = randomRotation == 0 ? CellOrientation.North : CellOrientation.East;
+                            tryDirections(CellOrientation.North, CellOrientation.East);
                             break;
                         default:
                             Debug.LogError("This cell orientation is unsupported.");
                             break;
                     }
+
+                    // Helper function that chose direction based on random value and if the chosen one is not possible, it tries with the other.
+                    void tryDirections(CellOrientation _first, CellOrientation _second)
+                    {
+                        // Try first direction
+                        if (randomRotation == 0)
+                        {
+                            // If the space around the first direction is free
+                            if (checkForSpace(_first))
+                            {
+                                newCellOrientation = _first;
+                                choseOrientation = true;
+                                return;
+                            }
+
+                            // If the space around the second direction is free
+                            if (checkForSpace(_second))
+                            {
+                                newCellOrientation = _second;
+                                choseOrientation = true;
+                                return;
+                            }
+                        }
+                        // Try east
+                        else
+                        {
+                            // If the space around the second direction is free
+                            if (checkForSpace(_second))
+                            {
+                                newCellOrientation = _second;
+                                choseOrientation = true;
+                                return;
+                            }
+
+                            // If the space around the first direction is free
+                            if (checkForSpace(_first))
+                            {
+                                newCellOrientation = _first;
+                                choseOrientation = true;
+                                return;
+                            }
+                        }
+
+                        possibleStreets ^= CellFeature.LShapedStreet;
+                    }
                     break;
                 case CellFeature.TShapedIntersection:
-                    randomRotation = Random.Range(0, 3);
-                    CellOrientation[,] orders;
+                    CellOrientation[,] orders = { };
+
                     // Setting this to minus one because when creating an T shaped intersection,
                     // the first cell of each possible way is created and then it continues from the last created cell.
                     // Because of this, between creating the intersection and the next intersection, there will be created one additional cell.
@@ -741,123 +663,38 @@ public class GridGenerator
                     switch (_dirFromLastCell)
                     {
                         case CellOrientation.East:
-                            orders = new CellOrientation[6, 3] {
-                                { CellOrientation.West,  CellOrientation.North, CellOrientation.South },
-                                { CellOrientation.West,  CellOrientation.South, CellOrientation.North },
-                                { CellOrientation.North, CellOrientation.West,  CellOrientation.South },
-                                { CellOrientation.North, CellOrientation.South, CellOrientation.West },
-                                { CellOrientation.South, CellOrientation.West,  CellOrientation.North },
-                                { CellOrientation.South, CellOrientation.North, CellOrientation.West }
-                            };
-
-                            randomRotation = Random.Range(0, 6);
-
-                            for (int i = 0; i < 3; i++)
-                            {
-                                var orientation = orders[randomRotation, i];
-                                if (checkForSpace(orientation))
-                                {
-                                    newCellOrientation = orientation;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            if (!choseOrientation)
-                            {
-                                possibleIntersections ^= CellFeature.TShapedIntersection;
-                            }
+                            orders = m_TEastDirectionMask;
                             break;
                         case CellOrientation.West:
-                            orders = new CellOrientation[6, 3]
-                            {
-                                { CellOrientation.East,  CellOrientation.North, CellOrientation.South },
-                                { CellOrientation.East,  CellOrientation.South, CellOrientation.North },
-                                { CellOrientation.North, CellOrientation.East,  CellOrientation.South },
-                                { CellOrientation.North, CellOrientation.South, CellOrientation.East },
-                                { CellOrientation.South, CellOrientation.East,  CellOrientation.North },
-                                { CellOrientation.South, CellOrientation.North, CellOrientation.East }
-                            };
-
-                            randomRotation = Random.Range(0, 6);
-
-                            for (int i = 0; i < 3; i++)
-                            {
-                                var orientation = orders[randomRotation, i];
-                                if (checkForSpace(orientation))
-                                {
-                                    newCellOrientation = orientation;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            if (!choseOrientation)
-                            {
-                                possibleIntersections ^= CellFeature.TShapedIntersection;
-                            }
+                            orders = m_TWestDirectionMask;
                             break;
                         case CellOrientation.North:
-                            orders = new CellOrientation[6, 3]
-                            {
-                                { CellOrientation.East,  CellOrientation.South, CellOrientation.West },
-                                { CellOrientation.East,  CellOrientation.West,  CellOrientation.South },
-                                { CellOrientation.South, CellOrientation.East,  CellOrientation.West },
-                                { CellOrientation.South, CellOrientation.West,  CellOrientation.East },
-                                { CellOrientation.West,  CellOrientation.East,  CellOrientation.South },
-                                { CellOrientation.West,  CellOrientation.South, CellOrientation.East }
-                            };
-
-                            randomRotation = Random.Range(0, 6);
-
-                            for (int i = 0; i < 3; i++)
-                            {
-                                var orientation = orders[randomRotation, i];
-                                if (checkForSpace(orientation))
-                                {
-                                    newCellOrientation = orientation;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            if (!choseOrientation)
-                            {
-                                possibleIntersections ^= CellFeature.TShapedIntersection;
-                            }
+                            orders = m_TNorthDirectionMask;
                             break;
                         case CellOrientation.South:
-                            orders = new CellOrientation[6, 3]
-                            {
-                                { CellOrientation.East,  CellOrientation.West,  CellOrientation.North },
-                                { CellOrientation.East,  CellOrientation.North, CellOrientation.West },
-                                { CellOrientation.West,  CellOrientation.East,  CellOrientation.North },
-                                { CellOrientation.West,  CellOrientation.North, CellOrientation.East },
-                                { CellOrientation.North, CellOrientation.East,  CellOrientation.West },
-                                { CellOrientation.North, CellOrientation.West,  CellOrientation.East }
-                            };
-
-                            randomRotation = Random.Range(0, 6);
-
-                            for (int i = 0; i < 3; i++)
-                            {
-                                var orientation = orders[randomRotation, i];
-                                if (checkForSpace(orientation))
-                                {
-                                    newCellOrientation = orientation;
-                                    choseOrientation = true;
-                                    break;
-                                }
-                            }
-
-                            if (!choseOrientation)
-                            {
-                                possibleIntersections ^= CellFeature.TShapedIntersection;
-                            }
+                            orders = m_TSouthDirectionMask;
                             break;
                         default:
                             Debug.LogError("This cell orientation is unsupported.");
                             break;
+                    }
+
+                    randomRotation = Random.Range(0, 6);
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var orientation = orders[randomRotation, i];
+                        if (checkForSpace(orientation))
+                        {
+                            newCellOrientation = orientation;
+                            choseOrientation = true;
+                            break;
+                        }
+                    }
+
+                    if (!choseOrientation)
+                    {
+                        possibleIntersections ^= CellFeature.TShapedIntersection;
                     }
                     break;
                 case CellFeature.XShapedIntersection:
@@ -963,220 +800,73 @@ public class GridGenerator
 
         bool checkForSpace(CellOrientation direction)
         {
-            bool result = false;
-
+            (int x, int y)[] mask = new (int, int)[0];
             switch (newCellFeatures)
             {
                 case CellFeature.IShapedStreet:
-                    result = checkForSpaceForIShapedStreet(direction);
+                    mask = RotateOffsets(m_IMaskOffsets, direction);
                     break;
                 case CellFeature.LShapedStreet:
-                    result = checkForSpaceForLShapedStreet(direction);
+                    mask = RotateOffsets(m_LMaskOffsets, direction);
                     break;
                 case CellFeature.TShapedIntersection:
-                    result = checkForSpaceForTShapedIntersection(direction);
+                    mask = RotateOffsets(m_TMaskOffsets, direction);
                     break;
                 case CellFeature.XShapedIntersection:
-                    result = checkForSpaceForXShapedIntersection(direction);
+                    mask = RotateOffsets(m_XMaskOffsets, direction);
                     break;
                 default:
                     break;
             }
-
-            return result;
-        }
-
-        bool checkForSpaceForIShapedStreet(CellOrientation direction)
-        {
-            bool result = true;
 
             int x = GridUtils.GetXPos(_currentCellIndex);
             int y = GridUtils.GetYPos(_currentCellIndex);
 
-            int[] indexes = new int[3];
-            switch (direction)
-            {
-                case CellOrientation.East:
-                    indexes[0] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = (y + m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    indexes[2] = (y - m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    break;
-                case CellOrientation.West:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = (y + m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    indexes[2] = (y - m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    break;
-                case CellOrientation.North:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = y * GridConsts.Width + (x - m_EmptyCellsBetweenStreets);
-                    indexes[2] = y * GridConsts.Width + (x + m_EmptyCellsBetweenStreets);
-                    break;
-                case CellOrientation.South:
-                    indexes[0] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = y * GridConsts.Width + (x - m_EmptyCellsBetweenStreets);
-                    indexes[2] = y * GridConsts.Width + (x + m_EmptyCellsBetweenStreets);
-                    break;
-                default:
-                    break;
-            }
+            GridGlobals.PositionsToCheck = (_currentCellIndex, mask);
 
-            for (int i = 0; i < indexes.Length; i++)
+            for (int i = 0; i < mask.Length; i++)
             {
-                if (GridConsts.StreetAdjacencyList.ContainsKey(indexes[i]))
+                (int x, int y) offset = mask[i];
+
+                int index = ((y + offset.y) * GridGlobals.Width + (x + offset.x));
+
+                if (GridGlobals.StreetAdjacencyList.ContainsKey(index))
                 {
-                    result = false;
-                    break;
+                    return false;
                 }
             }
 
-            return result;
+            return true;
         }
+    }
 
-        bool checkForSpaceForLShapedStreet(CellOrientation direction)
+    static (int x, int y)[] RotateOffsets((int x, int y)[] offsets, CellOrientation orientation)
+    {
+        // Rotate 90 degrees clockwise per orientation
+        (int x, int y)[] rotated = new (int, int)[offsets.Length];
+        for (int i = 0; i < offsets.Length; i++)
         {
-            bool result = true;
+            int x = offsets[i].x;
+            int y = offsets[i].y;
 
-            int x = GridUtils.GetXPos(_currentCellIndex);
-            int y = GridUtils.GetYPos(_currentCellIndex);
-
-            int[] indexes = new int[3];
-            switch (direction)
+            switch (orientation)
             {
                 case CellOrientation.East:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = y * GridConsts.Width + (x - m_EmptyCellsBetweenStreets);
-                    indexes[2] = (y - m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
+                    rotated[i] = (x, y);
                     break;
                 case CellOrientation.West:
-                    indexes[0] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = (y + m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x + m_EmptyCellsBetweenStreets);
+                    rotated[i] = (-x, -y);
                     break;
                 case CellOrientation.North:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = (y - m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x + m_EmptyCellsBetweenStreets);
+                    rotated[i] = (y, x);
                     break;
                 case CellOrientation.South:
-                    indexes[0] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = y * GridConsts.Width + (x - m_EmptyCellsBetweenStreets);
-                    indexes[2] = (y + m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
+                    rotated[i] = (y, -x);
                     break;
                 default:
                     break;
             }
-
-            for (int i = 0; i < indexes.Length; i++)
-            {
-                if (GridConsts.StreetAdjacencyList.ContainsKey(indexes[i]))
-                {
-                    result = false;
-                    break;
-                }
-            }
-
-            return result;
         }
-
-        bool checkForSpaceForTShapedIntersection(CellOrientation direction)
-        {
-            bool result = true;
-
-            int x = GridUtils.GetXPos(_currentCellIndex);
-            int y = GridUtils.GetYPos(_currentCellIndex);
-
-            int[] indexes = new int[3];
-            int index = 0;
-            switch (direction)
-            {
-                case CellOrientation.East:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x - m_EmptyCellsBetweenStreets);
-                    break;
-                case CellOrientation.West:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x + m_EmptyCellsBetweenStreets);
-                    break;
-                case CellOrientation.North:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[2] = (y - m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    break;
-                case CellOrientation.South:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[2] = (y + m_EmptyCellsBetweenStreets) * GridConsts.Width + x;
-                    break;
-                default:
-                    break;
-            }
-
-            for (int i = 0; i < indexes.Length; i++)
-            {
-                if (GridConsts.StreetAdjacencyList.ContainsKey(indexes[i]))
-                {
-                    result = false;
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        bool checkForSpaceForXShapedIntersection(CellOrientation direction)
-        {
-            bool result = true;
-
-            int x = GridUtils.GetXPos(_currentCellIndex);
-            int y = GridUtils.GetYPos(_currentCellIndex);
-
-            int[] indexes = new int[3];
-            switch (direction)
-            {
-                case CellOrientation.East:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    break;
-                case CellOrientation.West:
-                    indexes[0] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[1] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    indexes[2] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    break;
-                case CellOrientation.North:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[2] = (y + (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    break;
-                case CellOrientation.South:
-                    indexes[0] = y * GridConsts.Width + (x - (m_EmptyCellsBetweenStreets + 1));
-                    indexes[1] = y * GridConsts.Width + (x + (m_EmptyCellsBetweenStreets + 1));
-                    indexes[2] = (y - (m_EmptyCellsBetweenStreets + 1)) * GridConsts.Width + x;
-                    break;
-                default:
-                    break;
-            }
-
-            for (int i = 0; i < indexes.Length; i++)
-            {
-                int index = indexes[i];
-                if (GridConsts.StreetAdjacencyList.ContainsKey(index))
-                {
-                    CellType type = Cell.GetType(index);
-
-                    if ((type & CellType.Street) != 0 && (type & CellType.Intersection) != 0)
-                    {
-                        continue;
-                    }
-
-                    result = false;
-                    break;
-                }
-            }
-
-            return result;
-        }
+        return rotated;
     }
 }
