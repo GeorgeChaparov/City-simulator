@@ -20,13 +20,24 @@ public class GridGenerator
 
     private static int m_EmptyCellsBetweenStreets = 1;
 
+    private static int m_AllowedConsecutiveTurnsInSameOrientation = 2;
+
+    private static float m_XIntersectionLikelihood = 0.5f;
+
     private static int m_IShapedStreetsCount = 0;
     private static int m_LShapedStreetsCount = 0;
+    private static int m_TotalCellCount = 1;
 
-    private static int counter = 0;
+    private static int m_Counter = 0;
+
+    // Counts how many intersections of the same type we have in a row.
+    private static (CellFeature featureType, int count) m_LastIntersectionTypeCount = (CellFeature.None, 0);
+    // Counts how many turns with the same orientation we have in a row.
+    private static (CellOrientation orientation, int count) m_LastTurnOrientationCount = (CellOrientation.None, 0);
 
     public static void Init(int _minStreetsWithoutIntersection, int _maxStreetsWithoutIntersection, int _maxTurnsBetweenIntersection,
-        int _minStreetsBetweenTurns, int _minStreetsAfterIntersectionBeforeTurn, int _emptyCellsBetweenStreets)
+        int _minStreetsBetweenTurns, int _minStreetsAfterIntersectionBeforeTurn, int _emptyCellsBetweenStreets, int _allowedConsecutiveTurnsInSameOrientation,
+        float _xIntersectionLikelihood)
     {
         m_MinStreetsWithoutIntersection = _minStreetsWithoutIntersection;
         m_MaxStreetsWithoutIntersection = _maxStreetsWithoutIntersection;
@@ -34,10 +45,21 @@ public class GridGenerator
         m_MinStreetsBetweenTurns = _minStreetsBetweenTurns;
         m_MinStreetsAfterIntersectionBeforeTurn = _minStreetsAfterIntersectionBeforeTurn;
         m_EmptyCellsBetweenStreets = _emptyCellsBetweenStreets;
-
+        m_AllowedConsecutiveTurnsInSameOrientation = _allowedConsecutiveTurnsInSameOrientation;
+        m_XIntersectionLikelihood = _xIntersectionLikelihood;
 
         m_IShapedStreetsCount = 0;
         m_LShapedStreetsCount = 0;
+        m_TotalCellCount = 1;
+        m_Counter = 0;
+
+        if (m_EmptyCellsBetweenStreets != 1)
+        {
+            m_IMaskOffsets = GenerateMaskOffset(m_IMaskOffsets, true, false);
+            m_LMaskOffsets = GenerateMaskOffset(m_LMaskOffsets);
+            m_TMaskOffsets = GenerateMaskOffset(m_TMaskOffsets);
+            m_XMaskOffsets = GenerateMaskOffset(m_XMaskOffsets, true);
+        }
     }
 
     private static readonly CellOrientation[,] m_TEastDirectionMask = new CellOrientation[6, 3]
@@ -80,48 +102,142 @@ public class GridGenerator
         { CellOrientation.North, CellOrientation.West,  CellOrientation.East }
     };
 
-    private static readonly (int dx, int dy)[] m_IMaskOffsets = new (int, int)[]
+    public static (int x, int y)[] m_IMaskOffsets = new (int, int)[]
     {
-                                         (0, 3),
-                                         (0, 2),  (1, 2),
-                                         (0, 1),  (1, 1),  (2, 1), (3, 1),
+                                         
+                                         
+                                         (0, 1),  (1, 1),  (2, 1),
         /*I shaped street facing east -> (0, 0)*/ (1, 0),  (2, 0), (3, 0),
-                                         (0, -1), (1, -1), (2, -1), (3, -1),
-                                         (0, -2), (1, -2),
-                                         (0, -3),
+                                         (0, -1), (1, -1), (2, -1),
+                                         
+
     };
 
-    private static readonly (int dx, int dy)[] m_LMaskOffsets = new (int, int)[]
-    {
-                  (-1, 3),  (0, 3),  (1, 3),
-        (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
-        (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
-        (-2, 0),  (-1, 0),//(0, 0), <- L shaped street facing east
-        (-2, -1), (-1, -1), (0, -1), (1, -1),
-                  (-1, -2), (0, -2), (1, -2),
+    public static (int x, int y)[] m_LMaskOffsets = new (int, int)[]
+    {             
+        (-1, 2),  (0, 2),  (1, 2),
+        (-1, 1),  (0, 1),  (1, 1),
+        (-1, 0),//(0, 0), <- L shaped street facing east
+        (-1, -1), (0, -1), (1, -1),
     };
 
-    private static readonly (int dx, int dy)[] m_TMaskOffsets = new (int, int)[]
-    {
-                  (-1, 3),  (0, 3),  (1, 3),
-        (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
-        (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
-        (-2, 0),  (-1, 0),//(0, 0), <- T shaped intersection facing east
-        (-2, -1), (-1, -1), (0, -1), (1, -1),
-        (-2, -2), (-1, -2), (0, -2), (1, -2),
-                  (-1, -3), (0, -3), (1, -3),
+    public static (int x, int y)[] m_TMaskOffsets = new (int, int)[]
+    {             
+                  (0, 3),
+                  (0, 2),
+        (-1, 1),  (0, 1),  (1, 1),
+        (-1, 0),//(0, 0), <- T shaped intersection facing east
+        (-1, -1), (0, -1), (1, -1),
+                  (0, -2), 
+                  (0, -3),                     
     };
 
-    private static readonly (int dx, int dy)[] m_XMaskOffsets = new (int, int)[]
-    {
-        (-3, 3), (-2, 3),  (-1, 3),  (0, 3),  (1, 3),
-        (-3, 2), (-2, 2),  (-1, 2),  (0, 2),  (1, 2),
-        (-3, 1), (-2, 1),  (-1, 1),  (0, 1),  (1, 1),
-        (-3, 0), (-2, 0),  (-1, 0),//(0, 0), <- X shaped intersection facing east
-        (-3, -1), (-2, -1), (-1, -1), (0, -1), (1, -1),
-        (-3, -2), (-2, -2), (-1, -2), (0, -2), (1, -2),
-        (-3, -3), (-2, -3), (-1, -3), (0, -3), (1, -3),
+    public static (int x, int y)[] m_XMaskOffsets = new (int, int)[]
+    {                    
+                           (-2, 2),  (-1, 2),  (0, 2),  (1, 2),  (2, 2),  
+                           (-2, 1),  (-1, 1),  (0, 1),  (1, 1),  (2, 1),  
+        /*X shaped intersection facing east -> (0, 0)*/ (1, 0),  (2, 0),   
+                           (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1), 
+                           (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),   
     };
+
+    private static (int x, int y)[] GenerateMaskOffset((int x, int y)[] offsets, bool lookingToRight = false, bool leftAndRight = true)
+    {
+        List<(int x, int y)> mask = new List<(int x, int y)>(offsets);
+        List<(int x, int y)> currentLayer = new List<(int x, int y)>();
+        List<(int x, int y)> lastLayer = new List<(int x, int y)>(offsets);
+
+        for (int i = 0; i < m_EmptyCellsBetweenStreets; i++)
+        {
+            foreach ((int x, int y) in lastLayer)
+            {
+                (int x, int y) upOffset = (0, 0);
+                (int x, int y) downOffset = (0, 0);
+                (int x, int y) leftOffset = (0, 0);
+                (int x, int y) rightOffset = (0, 0);
+
+                (int x, int y) upRightOffset = (0, 0);
+                (int x, int y) downRightOffset = (0, 0);
+                (int x, int y) downLeftOffset = (0, 0);
+                (int x, int y) upLeftOffset = (0, 0);
+
+                if (x > 0)
+                {
+                    rightOffset = (x + 1, y);
+
+                    if (y > 0)
+                    {
+                        upOffset = (x, y + 1);
+                        upRightOffset = (x + 1, y + 1);
+                    }
+                    else if (y < 0)
+                    {
+                        downOffset = (x, y - 1);
+                        downRightOffset = (x + 1, y - 1);
+                    }
+                }
+                else if (x < 0)
+                {
+                    leftOffset = (x - 1, y);
+
+                    if (y > 0)
+                    {
+                        upOffset = (x, y + 1);
+                        upLeftOffset = (x - 1, y + 1);
+                    }
+                    else if (y < 0)
+                    {
+                        downOffset = (x, y - 1);
+                        downLeftOffset = (x - 1, y - 1);
+                    }
+                }
+                else
+                {
+                    if (y > 0)
+                    {
+                        upOffset = (x, y + 1);
+                    }
+                    else if (y < 0)
+                    {
+                        downOffset = (x, y - 1);
+                    }
+                }
+
+                if (lookingToRight)
+                {
+                    if (!mask.Contains(upOffset) && (upOffset.y != 0 || upOffset.x > 0)) { mask.Add(upOffset); currentLayer.Add(upOffset); }
+                    if (!mask.Contains(downOffset) && (downOffset.y != 0 || downOffset.x > 0)) { mask.Add(downOffset); currentLayer.Add(downOffset); }
+                    if (!mask.Contains(leftOffset) && (leftOffset.y != 0 || leftOffset.x > 0)) { mask.Add(leftOffset); currentLayer.Add(leftOffset); }
+                    if (!mask.Contains(rightOffset) && (rightOffset.y != 0 || rightOffset.x > 0)) { mask.Add(rightOffset); currentLayer.Add(rightOffset); }
+
+                    if (!mask.Contains(upRightOffset) && (upRightOffset.y != 0 || upRightOffset.x > 0)) { mask.Add(upRightOffset); currentLayer.Add(upRightOffset); }
+                    if (!mask.Contains(downRightOffset) && (downRightOffset.y != 0 || downRightOffset.x > 0)) { mask.Add(downRightOffset); currentLayer.Add(downRightOffset); }
+
+                    if (!mask.Contains(upLeftOffset) && (upLeftOffset.y != 0 || upLeftOffset.x > 0)) { mask.Add(upLeftOffset); currentLayer.Add(upLeftOffset); }
+                    if (!mask.Contains(downLeftOffset) && (downLeftOffset.y != 0 || downLeftOffset.x > 0)) { mask.Add(downLeftOffset); currentLayer.Add(downLeftOffset); }
+                }
+                else
+                {
+                    if (!mask.Contains(upOffset) && (upOffset.y != 0 || upOffset.x < 0)) { mask.Add(upOffset); currentLayer.Add(upOffset); }
+                    if (!mask.Contains(downOffset) && (downOffset.y != 0 || downOffset.x < 0)) { mask.Add(downOffset); currentLayer.Add(downOffset); }
+                    if (!mask.Contains(leftOffset) && (leftOffset.y != 0 || leftOffset.x < 0)) { mask.Add(leftOffset); currentLayer.Add(leftOffset); }
+                    if (!mask.Contains(rightOffset) && (rightOffset.y != 0 || rightOffset.x < 0)) { mask.Add(rightOffset); currentLayer.Add(rightOffset); }
+
+                    if (!mask.Contains(upRightOffset) && (upRightOffset.y != 0 || upRightOffset.x < 0)) { mask.Add(upRightOffset); currentLayer.Add(upRightOffset); }
+                    if (!mask.Contains(downRightOffset) && (downRightOffset.y != 0 || downRightOffset.x < 0)) { mask.Add(downRightOffset); currentLayer.Add(downRightOffset); }
+
+                    if (!mask.Contains(upLeftOffset) && (upLeftOffset.y != 0 || upLeftOffset.x < 0)) { mask.Add(upLeftOffset); currentLayer.Add(upLeftOffset); }
+                    if (!mask.Contains(downLeftOffset) && (downLeftOffset.y != 0 || downLeftOffset.x < 0)) { mask.Add(downLeftOffset); currentLayer.Add(downLeftOffset); }
+                }
+            }
+
+            lastLayer.Clear();
+            lastLayer.AddRange(currentLayer);
+            currentLayer.Clear();
+        }
+
+        return mask.ToArray();
+    }
 
     public static IEnumerator Generate()
     {
@@ -131,14 +247,14 @@ public class GridGenerator
 
         yield return CreateStreets(randomStartIndex);
 
+        Debug.Log($"I shaped: {m_TotalCellCount}");
         Debug.Log($"I shaped: {m_IShapedStreetsCount}");
         Debug.Log($"L shaped: {m_LShapedStreetsCount}");
-    }
+}
 
     private static IEnumerator CreateStreets(int _startIndex)
     {
-        Stack<int> ToCheck = new Stack<int>();
-        int cellCount = 1;
+        Stack<int> ToCheck = new Stack<int>();;
 
         Cell.PopulateCell(_startIndex, CellType.Intersection, 2, CellFeature.XShapedIntersection, CellOrientation.East);
         GridGlobals.StreetAdjacencyList.Add(_startIndex, new List<int>());
@@ -172,11 +288,19 @@ public class GridGenerator
 
                 PopulateNextStreetCell(index, lastCellIndex, dirFromLastCell);
 
-                Debug.Log(++cellCount);
+                ++m_TotalCellCount;
+                
 
-                yield return new WaitUntil(() => GameManager.Instance.counter > counter);
+                if (!GameManager.Instance.m_Skip)
+                {
+                    yield return new WaitUntil(() => GameManager.Instance.counter > m_Counter || GameManager.Instance.m_Continue);
+                }
+                else 
+                {
+                    GameManager.Instance.counter = m_Counter;
+                }
 
-                counter++;
+                m_Counter++;
             }
 
         } while (ToCheck.Count != 0);
@@ -207,6 +331,8 @@ public class GridGenerator
         {
             directions.Add(CellOrientation.South);
         }
+
+        directions = new List<CellOrientation>(GridUtils.Shuffle<CellOrientation>(directions.ToArray()));
 
         int x = GridUtils.GetXPos(_index);
         int y = GridUtils.GetYPos(_index);
@@ -284,8 +410,8 @@ public class GridGenerator
             positions.Add(m_HIT_END_OF_GRID);
 
             // If we hit the grid, and there is no way to continue from this cell, that means we will continue from the last intersection.
-            // As when creating the intersection, we put on cell in each possible way, there already will be one street. That is why we set the count to -1.
-            m_StreetsWithoutIntersectionCount = -1;
+            // As when creating the intersection, we put on cell in each possible way, there already will be one street. That is why we set the count to 1.
+            m_StreetsWithoutIntersectionCount = 1;
         }
     }
 
@@ -370,11 +496,6 @@ public class GridGenerator
                 break;
         }
 
-        if (directions == CellOrientation.None)
-        {
-            Debug.LogError($"Can't calculate the allowed directions from Cell at {_index}");
-        }
-
         return directions;
     }
 
@@ -389,8 +510,10 @@ public class GridGenerator
         CellOrientation newCellOrientation = CellOrientation.None;
         int traversalCost = -1;
 
+        bool choseType = false;
+
         // While we have valid options for streets and intersections, but we have not chosen one.
-        while ((possibleIntersections != CellFeature.None && possibleStreets != CellFeature.None) && !foundPossible)
+        while ((possibleIntersections != CellFeature.None || possibleStreets != CellFeature.None) && !foundPossible)
         {
             /* CALCULATING TYPE */
 
@@ -403,13 +526,13 @@ public class GridGenerator
                     break;
                 }
 
-                newCellType = selectType(CellType.Intersection);
-                m_StreetsWithoutIntersectionCount = 0;
+                newCellType = CellType.Intersection;
+                choseType = true;
             }
             // If we have exceeded the minimum allowed street count without an intersection, we decide randomly if we will try to create one or not.
             else if (m_StreetsWithoutIntersectionCount >= m_MinStreetsWithoutIntersection)
             {
-                bool choseType = false;
+                
                 switch (Random.Range(0, 2))
                 {
                     case 0:
@@ -422,12 +545,12 @@ public class GridGenerator
                                 break;
                             }
 
-                            newCellType = selectType(CellType.Intersection);
+                            newCellType = CellType.Intersection;
                             choseType = true;
                             break;
                         }
 
-                        newCellType = selectType(CellType.Street);
+                        newCellType = CellType.Street;
                         choseType = true;
                         break;
                     case 1:
@@ -441,39 +564,45 @@ public class GridGenerator
                                 break;
                             }
 
-                            newCellType = selectType(CellType.Street);
+                            newCellType = CellType.Street;
                             choseType = true;
                             break;
                         }
 
-                        newCellType = selectType(CellType.Intersection);
+                        newCellType = CellType.Intersection;
                         choseType = true;
                         break;
                     default:
                         Debug.LogError("Range unsupported!");
                         break;
                 }
-
-                if (!choseType)
-                {
-                    // If we did not chose a type, we break the loop.
-                    break;
-                }
             }
+            // Intersections are not possible because of one of the rules.
             else
             {
-                newCellType = selectType(CellType.Street);
+                // So we remove all intersections from the list with possible intersections.
+                possibleIntersections = CellFeature.None;
+
+                if (possibleStreets == CellFeature.None)
+                {
+                    break;
+                }
+
+                newCellType = CellType.Street;
+                choseType = true;
+            }
+
+            if (!choseType)
+            {
+                // If we did not chose a type, we break the loop.
+                break;
             }
 
             /* CALCULATING SHAPE */
-            int randomFeature = 0;
-
             bool choseFeature = false;
             switch (newCellType)
             {
                 case CellType.Street:
-
-                    traversalCost = 2;
                     newCellFeatures = CellFeature.None;
 
                     // If we have enough turns. 
@@ -496,22 +625,15 @@ public class GridGenerator
                             break;
                         }
 
-                        newCellFeatures = selectFeature(CellFeature.IShapedStreet);
+                        newCellFeatures = CellFeature.IShapedStreet;
                         choseFeature = true;
                         break;
                     }
 
-                    randomFeature = Random.Range(0, 2);
-                    tryFeatures(CellFeature.IShapedStreet, CellFeature.LShapedStreet);
+                    tryFeatures(possibleStreets , CellFeature.IShapedStreet, CellFeature.LShapedStreet, 0.5f);
                     break;
                 case CellType.Intersection:
-                    traversalCost = 5;
-                    randomFeature = Random.Range(0, 2);
-                    tryFeatures(CellFeature.XShapedIntersection, CellFeature.TShapedIntersection);
-
-                    // -1 is the default value. It shows that we don't have a 90 degrees turn yet.
-                    m_LastTurnIndex = -1;
-                    m_TurnsBetweenIntersectionCount = 0;
+                    tryFeatures(possibleIntersections, CellFeature.XShapedIntersection, CellFeature.TShapedIntersection, m_XIntersectionLikelihood);
                     break;
                 default:
                     Debug.LogError("This cell type is unsupported.");
@@ -519,44 +641,46 @@ public class GridGenerator
             }
 
             // Helper function that chose feature based on random value and if the chosen one is not possible, it tries with the other.
-            void tryFeatures(CellFeature _first, CellFeature _second)
+            void tryFeatures(CellFeature possibleFeatures, CellFeature _first, CellFeature _second, float _firstChance)
             {
-                if (randomFeature == 0)
+                float random = Random.value;
+
+                if (random < _firstChance)
                 {
                     // If the first feature is not possible, we try with the second.
-                    if ((possibleStreets & _first) == 0)
+                    if ((possibleFeatures & _first) == 0)
                     {
                         // If the second feature is not possible, we return.
-                        if ((possibleStreets & _second) == 0)
+                        if ((possibleFeatures & _second) == 0)
                         {
                             return;
                         }
 
-                        newCellFeatures = selectFeature(_second);
+                        newCellFeatures = _second;
                         choseFeature = true;
                         return;
                     }
 
-                    newCellFeatures = selectFeature(_first);
+                    newCellFeatures = _first;
                     choseFeature = true;
                 }
                 else
                 {
                     // If the second feature is not possible, we try with the first.
-                    if ((possibleStreets & _second) == 0)
+                    if ((possibleFeatures & _second) == 0)
                     {
                         // If the first feature is not possible, we return.
-                        if ((possibleStreets & _first) == 0)
+                        if ((possibleFeatures & _first) == 0)
                         {
                             return;
                         }
 
-                        newCellFeatures = selectFeature(_first);
+                        newCellFeatures = _first;
                         choseFeature = true;
                         return;
                     }
 
-                    newCellFeatures = selectFeature(_second);
+                    newCellFeatures = _second;
                     choseFeature = true;
                 }
             }
@@ -568,9 +692,6 @@ public class GridGenerator
             }
 
             /* CALCULATING ORIANTATION */
-
-            int randomRotation = 0;
-
             bool choseOrientation = false;
             switch (newCellFeatures)
             {
@@ -586,21 +707,20 @@ public class GridGenerator
                     choseOrientation = true;
                     break;
                 case CellFeature.LShapedStreet:
-                    randomRotation = Random.Range(0, 2);
 
                     switch (_dirFromLastCell)
                     {
                         case CellOrientation.East:
-                            tryDirections(CellOrientation.West, CellOrientation.North);
+                            tryStreetDirections(CellOrientation.West, CellOrientation.North);
                             break;
                         case CellOrientation.West:
-                            tryDirections(CellOrientation.South, CellOrientation.East);
+                            tryStreetDirections(CellOrientation.South, CellOrientation.East);
                             break;
                         case CellOrientation.North:
-                            tryDirections(CellOrientation.South, CellOrientation.West);
+                            tryStreetDirections(CellOrientation.South, CellOrientation.West);
                             break;
                         case CellOrientation.South:
-                            tryDirections(CellOrientation.North, CellOrientation.East);
+                            tryStreetDirections(CellOrientation.North, CellOrientation.East);
                             break;
                         default:
                             Debug.LogError("This cell orientation is unsupported.");
@@ -608,25 +728,32 @@ public class GridGenerator
                     }
 
                     // Helper function that chose direction based on random value and if the chosen one is not possible, it tries with the other.
-                    void tryDirections(CellOrientation _first, CellOrientation _second)
+                    void tryStreetDirections(CellOrientation _first, CellOrientation _second)
                     {
                         // Try first direction
-                        if (randomRotation == 0)
+                        if (Random.Range(0, 2) == 0)
                         {
                             // If the space around the first direction is free
                             if (checkForSpace(_first))
                             {
-                                newCellOrientation = _first;
-                                choseOrientation = true;
-                                return;
+                                // if the last N turn were not oriented the same way as this one.
+                                if (m_LastTurnOrientationCount.orientation != _first || 
+                                    m_LastTurnOrientationCount.count <= m_AllowedConsecutiveTurnsInSameOrientation)
+                                {
+                                    newCellOrientation = _first;
+                                    choseOrientation = true;
+                                }
                             }
-
                             // If the space around the second direction is free
-                            if (checkForSpace(_second))
+                            else if (checkForSpace(_second))
                             {
-                                newCellOrientation = _second;
-                                choseOrientation = true;
-                                return;
+                                // if the last N turn were not oriented the same way as this one.
+                                if (m_LastTurnOrientationCount.orientation != _second || 
+                                    m_LastTurnOrientationCount.count <= m_AllowedConsecutiveTurnsInSameOrientation)
+                                {
+                                    newCellOrientation = _second;
+                                    choseOrientation = true;
+                                }
                             }
                         }
                         // Try east
@@ -635,17 +762,24 @@ public class GridGenerator
                             // If the space around the second direction is free
                             if (checkForSpace(_second))
                             {
-                                newCellOrientation = _second;
-                                choseOrientation = true;
-                                return;
+                                // if the last N turn were not oriented the same way as this one.
+                                if (m_LastTurnOrientationCount.orientation != _second || 
+                                    m_LastTurnOrientationCount.count <= m_AllowedConsecutiveTurnsInSameOrientation)
+                                {
+                                    newCellOrientation = _second;
+                                    choseOrientation = true;
+                                }
                             }
-
                             // If the space around the first direction is free
-                            if (checkForSpace(_first))
+                            else if (checkForSpace(_first))
                             {
-                                newCellOrientation = _first;
-                                choseOrientation = true;
-                                return;
+                                // if the last N turn were not oriented the same way as this one.
+                                if (m_LastTurnOrientationCount.orientation != _first || 
+                                    m_LastTurnOrientationCount.count <= m_AllowedConsecutiveTurnsInSameOrientation)
+                                {
+                                    newCellOrientation = _first;
+                                    choseOrientation = true;
+                                }
                             }
                         }
 
@@ -654,11 +788,6 @@ public class GridGenerator
                     break;
                 case CellFeature.TShapedIntersection:
                     CellOrientation[,] orders = { };
-
-                    // Setting this to minus one because when creating an T shaped intersection,
-                    // the first cell of each possible way is created and then it continues from the last created cell.
-                    // Because of this, between creating the intersection and the next intersection, there will be created one additional cell.
-                    m_StreetsWithoutIntersectionCount = -1;
 
                     switch (_dirFromLastCell)
                     {
@@ -679,7 +808,7 @@ public class GridGenerator
                             break;
                     }
 
-                    randomRotation = Random.Range(0, 6);
+                    int randomRotation = Random.Range(0, 6);
 
                     for (int i = 0; i < 3; i++)
                     {
@@ -698,10 +827,7 @@ public class GridGenerator
                     }
                     break;
                 case CellFeature.XShapedIntersection:
-                    // Setting this to minus two because when creating an X shaped intersection,
-                    // the first cell of each possible way is created and then it continues from the last created cell.
-                    // Because of this, between creating the intersection and the next intersection, there will be created two additional cells.
-                    m_StreetsWithoutIntersectionCount = -2;
+                    
 
                     if (!checkForSpace(_dirFromLastCell))
                     {
@@ -727,8 +853,15 @@ public class GridGenerator
         }
 
 
+
+
         if (!foundPossible)
         {
+            // Setting this to one because when creating an intersection,
+            // the first cell of each possible way is created and then it continues from the last created cell.
+            // Because of this, When we hit dead end, we well continue from the last intersection with one cell already added.
+            m_StreetsWithoutIntersectionCount = 1;
+
             newCellType = CellType.Street;
             traversalCost = 2;
             newCellFeatures = CellFeature.DeadEnd;
@@ -751,33 +884,36 @@ public class GridGenerator
                     break;
             }
         }
-
-        Cell.PopulateCell(_currentCellIndex, newCellType, traversalCost, newCellFeatures, newCellOrientation);
-
-
-
-
-
-        CellType selectType(CellType typeToSelect)
+        else
         {
-            switch (typeToSelect)
+            switch (newCellType)
             {
                 case CellType.Street:
                     ++m_StreetsWithoutIntersectionCount;
+                    traversalCost = 2;
                     break;
                 case CellType.Intersection:
-                    m_StreetsWithoutIntersectionCount = 0;
+                    // -1 is the default value. It shows that we don't have a 90 degrees turn yet.
+                    m_LastTurnIndex = -1;
+                    m_TurnsBetweenIntersectionCount = 0;
+                    traversalCost = 5;
+
+                    if (m_LastIntersectionTypeCount.featureType == newCellFeatures)
+                    {
+                        m_LastIntersectionTypeCount.count++;
+                    }
+                    else
+                    {
+                        m_LastIntersectionTypeCount.featureType = newCellFeatures;
+                        m_LastIntersectionTypeCount.count = 1;
+                    }
+
                     break;
                 default:
                     break;
             }
 
-            return typeToSelect;
-        }
-
-        CellFeature selectFeature(CellFeature featureToSelect)
-        {
-            switch (featureToSelect)
+            switch (newCellFeatures)
             {
                 case CellFeature.IShapedStreet:
                     m_IShapedStreetsCount++;
@@ -786,17 +922,38 @@ public class GridGenerator
                     m_LastTurnIndex = m_StreetsWithoutIntersectionCount;
                     m_TurnsBetweenIntersectionCount++;
                     m_LShapedStreetsCount++;
+
+                    if (m_LastTurnOrientationCount.orientation == newCellOrientation)
+                    {
+                        m_LastTurnOrientationCount.count++;
+                    }
+                    else
+                    {
+                        m_LastTurnOrientationCount.orientation = newCellOrientation;
+                        m_LastTurnOrientationCount.count = 1;
+                    }
                     break;
                 case CellFeature.TShapedIntersection:
+                    // Setting this to minus one because when creating an T shaped intersection,
+                    // the first cell of each possible way is created and then it continues from the last created cell.
+                    // Because of this, between creating the intersection and the next intersection, there will be created one additional cell.
+                    m_StreetsWithoutIntersectionCount = -1;
                     break;
                 case CellFeature.XShapedIntersection:
+                    // Setting this to minus two because when creating an X shaped intersection,
+                    // the first cell of each possible way is created and then it continues from the last created cell.
+                    // Because of this, between creating the intersection and the next intersection, there will be created two additional cells.
+                    m_StreetsWithoutIntersectionCount = -2;
                     break;
                 default:
                     break;
             }
-
-            return featureToSelect;
         }
+
+        Cell.PopulateCell(_currentCellIndex, newCellType, traversalCost, newCellFeatures, newCellOrientation);
+
+
+
 
         bool checkForSpace(CellOrientation direction)
         {
@@ -858,7 +1015,7 @@ public class GridGenerator
                     rotated[i] = (-x, -y);
                     break;
                 case CellOrientation.North:
-                    rotated[i] = (y, x);
+                    rotated[i] = (-y, x);
                     break;
                 case CellOrientation.South:
                     rotated[i] = (y, -x);

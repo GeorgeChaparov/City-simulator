@@ -1,3 +1,5 @@
+using Unity.VisualScripting;
+
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
@@ -23,10 +25,40 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private int m_MinStreetsAfterIntersectionBeforeTurn = 0;
 
+    [Min(1)]
     [SerializeField]
     private int m_EmptyCellsBetweenStreets = 1;
 
+    [SerializeField]
+    private int m_AllowedConsecutiveTurnsInSameOrientation = 2;
+
+    [Range(0, 1)]
+    [SerializeField]
+    private float m_TIntersectionLikelihood = 0.5f;
+
+    [Range(0, 1)]
+    [SerializeField]
+    private float m_XIntersectionLikelihood = 0.5f;
+
+    private float m_LastTIntersectionLikelihood = 0.5f;
+    private float m_LastXIntersectionLikelihood = 0.5f;
+
     public static GridManager Instance { get; private set; }
+
+    private void OnValidate()
+    {
+        if (m_LastTIntersectionLikelihood != m_TIntersectionLikelihood)
+        {
+            m_XIntersectionLikelihood = 1 - m_TIntersectionLikelihood;
+        }
+        else if (m_LastXIntersectionLikelihood != m_XIntersectionLikelihood)
+        {
+            m_TIntersectionLikelihood = 1 - m_XIntersectionLikelihood;
+        }
+
+        m_LastTIntersectionLikelihood = m_TIntersectionLikelihood;
+        m_LastXIntersectionLikelihood = m_XIntersectionLikelihood;
+    }
 
     private void Awake()
     {
@@ -40,23 +72,44 @@ public class GridManager : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        Init();
+        StartGeneration();
+        Visualize();
+    }
+
     void Update()
     {
         GridGlobals.CellSize = m_CellSize;
 
-        if (Input.GetKeyUp(KeyCode.R))
+        if (GameManager.Instance.m_Reset)
         {
+            GameManager.Instance.m_Reset = false;
             GridGlobals.Reset();
-
-            GridGlobals.Width = GridGlobals.Height = m_GridSize;
-
-            Cell.Init();
-            GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxTurnsBetweenIntersection, 
-                m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn, m_EmptyCellsBetweenStreets);
-
-            StartCoroutine(GridGenerator.Generate());
-
-            GridVisualizer.Instance.Init();
+            Init();
+            StartGeneration();
+            Visualize();
         }
+    }
+
+    private void Init()
+    {
+        GridGlobals.Width = GridGlobals.Height = m_GridSize;
+
+        Cell.Init();
+        GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxTurnsBetweenIntersection,
+            m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn, m_EmptyCellsBetweenStreets, m_AllowedConsecutiveTurnsInSameOrientation,
+            m_XIntersectionLikelihood);
+    }
+
+    private void StartGeneration()
+    {
+        StartCoroutine(GridGenerator.Generate());
+    }
+
+    private void Visualize()
+    {
+        GridVisualizer.Instance.Init();
     }
 }

@@ -25,7 +25,6 @@ public class GridGlobals
         StreetAdjacencyList.Clear();
         SidewalkAdjacencyList.Clear();
         PositionsToCheck = new();
-
         PositionsToCheck.Item2 = new (int, int)[0];
     }
 }
