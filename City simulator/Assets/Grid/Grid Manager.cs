@@ -40,8 +40,22 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private float m_XIntersectionLikelihood = 0.5f;
 
+    [Range(0, 1)]
+    [SerializeField]
+    private float m_IStreetLikelihood = 0.5f;
+
+    [Range(0, 1)]
+    [SerializeField]
+    private float m_LStreetLikelihood = 0.5f;
+
+    [SerializeField]
+    private bool m_PreventLoopAroundTurns = true;
+
     private float m_LastTIntersectionLikelihood = 0.5f;
     private float m_LastXIntersectionLikelihood = 0.5f;
+
+    private float m_LastIStreetLikelihood = 0.5f;
+    private float m_LastLStreetLikelihood = 0.5f;
 
     public static GridManager Instance { get; private set; }
 
@@ -58,6 +72,18 @@ public class GridManager : MonoBehaviour
 
         m_LastTIntersectionLikelihood = m_TIntersectionLikelihood;
         m_LastXIntersectionLikelihood = m_XIntersectionLikelihood;
+
+        if (m_LastIStreetLikelihood != m_IStreetLikelihood)
+        {
+            m_LStreetLikelihood = 1 - m_IStreetLikelihood;
+        }
+        else if (m_LastLStreetLikelihood != m_LStreetLikelihood)
+        {
+            m_IStreetLikelihood = 1 - m_LStreetLikelihood;
+        }
+
+        m_LastIStreetLikelihood = m_IStreetLikelihood;
+        m_LastLStreetLikelihood = m_LStreetLikelihood;
     }
 
     private void Awake()
@@ -100,7 +126,7 @@ public class GridManager : MonoBehaviour
         Cell.Init();
         GridGenerator.Init(m_MinStreetsWithoutIntersection, m_MaxStreetsWithoutIntersection, m_MaxTurnsBetweenIntersection,
             m_MinStreetsBetweenTurns, m_MinStreetsAfterIntersectionBeforeTurn, m_EmptyCellsBetweenStreets, m_AllowedConsecutiveTurnsInSameOrientation,
-            m_XIntersectionLikelihood);
+            m_XIntersectionLikelihood, m_PreventLoopAroundTurns, m_IStreetLikelihood);
     }
 
     private void StartGeneration()

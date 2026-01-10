@@ -1,0 +1,92 @@
+using UnityEngine;
+
+public class StreetGenCache
+{
+    /// <summary>
+    /// Holds the possible directions for the T shaped intersection.
+    /// </summary>
+    public static readonly CellOrientation[][] TDirectionMask = new CellOrientation[4][]
+    {
+        new[] { CellOrientation.West,  CellOrientation.North, CellOrientation.South }, // 0 - If oriented east
+        new[] { CellOrientation.East,  CellOrientation.North, CellOrientation.South }, // 1 - If oriented west
+        new[] { CellOrientation.South, CellOrientation.East,  CellOrientation.West },  // 2 - If oriented north
+        new[] { CellOrientation.North, CellOrientation.East,  CellOrientation.West },  // 3 - If oriented south
+    };
+
+    public static readonly (int x, int y)[] IBaseMaskOffsets = new (int, int)[]
+    {
+                                         (0, 1),  (1, 1),  (2, 1),
+        /*I shaped street facing east -> (0, 0)*/ (1, 0),  (2, 0), (3, 0),
+                                         (0, -1), (1, -1), (2, -1),
+    };
+
+    public static readonly (int x, int y)[] LBaseForwardMaskOffsets = new (int, int)[]
+    {
+        (-1, 2),  (0, 2),  (1, 2),
+        (-1, 1),  (0, 1),  (1, 1),
+        (-1, 0),//(0, 0), <- L shaped street facing east
+        (-1, -1), (0, -1), (1, -1),
+    };
+
+    public static readonly (int x, int y)[] LBaseBackwardMaskOffsets = new (int, int)[]
+    {
+        // L shaped street facing east
+        (-1, 1), /* | */   (1, 1),  (2, 1),
+        (-1, 0),/*(0, 0)*/ (1, 0), (2, 0),
+        (-1, -1), (0, -1), (1, -1), (2, -1),
+    };
+
+    public static readonly (int x, int y)[] TBaseForwardMaskOffsets = new (int, int)[]
+    {
+                  (0, 3),
+                  (0, 2),
+        (-1, 1),  (0, 1),  (1, 1),
+        (-1, 0),//(0, 0), <- T shaped intersection facing east
+        (-1, -1), (0, -1), (1, -1),
+                  (0, -2),
+                  (0, -3),
+    };
+
+    public static readonly (int x, int y)[] TBaseUpwardMaskOffsets = new (int, int)[]
+    {
+        // T shaped intersection facing east          
+        (-1, 1), /* | */   (1, 1),
+        (-1, 0),/*(0, 0)*/ (1, 0), (2, 0), (3, 0),
+        (-1, -1), (0, -1), (1, -1),
+                  (0, -2),
+                  (0, -3),
+    };
+
+    public static readonly (int x, int y)[] TBaseDownwardMaskOffsets = new (int, int)[]
+    {
+                  (0, 3),
+                  (0, 2),
+        (-1, 1),  (0, 1),  (1, 1),
+        (-1, 0),/*(0, 0)*/ (1, 0), (2, 0), (3, 0),
+        (-1, -1), /* | */  (1, -1),
+        // T shaped intersection facing east
+    };
+
+    public static readonly (int x, int y)[] XBaseMaskOffsets = new (int, int)[]
+    {
+                           (-2, 2),  (-1, 2),  (0, 2),  (1, 2),  (2, 2),
+                           (-2, 1),  (-1, 1),  (0, 1),  (1, 1),  (2, 1),  
+        /*X shaped intersection facing east -> (0, 0)*/ (1, 0),  (2, 0),
+                           (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),
+                           (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
+    };
+
+    /// <summary>
+    /// Series of orientations that will likely make the streets crash into each other.
+    /// </summary>
+    public static readonly CellOrientation[][] LDeniedConsecutiveOrientations = new CellOrientation[6][]
+    {
+        new CellOrientation[3] { CellOrientation.East,  CellOrientation.South,  CellOrientation.West },
+        new CellOrientation[3] { CellOrientation.West,  CellOrientation.North, CellOrientation.East },
+        new CellOrientation[3] { CellOrientation.West,  CellOrientation.South, CellOrientation.East },
+        new CellOrientation[3] { CellOrientation.North,  CellOrientation.West,  CellOrientation.South },
+        new CellOrientation[3] { CellOrientation.South,  CellOrientation.East, CellOrientation.North },
+        new CellOrientation[3] { CellOrientation.South,  CellOrientation.West, CellOrientation.North },
+    };
+
+}

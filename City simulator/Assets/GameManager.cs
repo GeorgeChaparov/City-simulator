@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UIElements;
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -55,26 +56,7 @@ public class GameManager : MonoBehaviour
             GameManager.Instance.m_Continue = false;
             GameManager.Instance.m_Skip = false;
             GameManager.Instance.counter = 0;
-        }
-
-        if (Input.GetKeyUp(KeyCode.D))
-        {
-            GridGlobals.PositionsToCheck = (0, GridGenerator.m_IMaskOffsets);
-        }
-
-        if (Input.GetKeyUp(KeyCode.F))
-        {
-            GridGlobals.PositionsToCheck = (0, GridGenerator.m_LMaskOffsets);
-        }
-
-        if (Input.GetKeyUp(KeyCode.G))
-        {
-            GridGlobals.PositionsToCheck = (0, GridGenerator.m_TMaskOffsets);
-        }
-
-        if (Input.GetKeyUp(KeyCode.H))
-        {
-            GridGlobals.PositionsToCheck = (0, GridGenerator.m_XMaskOffsets);
+            Debug.ClearDeveloperConsole();
         }
     }
 }
