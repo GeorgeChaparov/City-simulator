@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class StreetGenCache
+public class RoadGenCache
 {
     /// <summary>
     /// Holds the possible directions for the T shaped intersection.
@@ -12,6 +12,9 @@ public class StreetGenCache
         new[] { CellOrientation.South, CellOrientation.East,  CellOrientation.West },  // 2 - If oriented north
         new[] { CellOrientation.North, CellOrientation.East,  CellOrientation.West },  // 3 - If oriented south
     };
+
+    // Masks for each type of road used to create the masks used during simulation for collision detection.
+    #region Base collistion detection masks
 
     public static readonly (int x, int y)[] IBaseMaskOffsets = new (int, int)[]
     {
@@ -75,6 +78,8 @@ public class StreetGenCache
                            (-2, -1), (-1, -1), (0, -1), (1, -1), (2, -1),
                            (-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
     };
+
+    #endregion
 
     /// <summary>
     /// Series of orientations that will likely make the streets crash into each other.

@@ -8,52 +8,52 @@ public class GridGenerator
         int _minStreetsBetweenTurns, int _minStreetsAfterIntersectionBeforeTurn, int _emptyCellsBetweenStreets, int _allowedConsecutiveTurnsInSameOrientation,
         float _xIntersectionLikelihood, bool _preventLoopAroundTurns, float _iStreetLikelihood)
     {
-        StreetGenGlobals.MinStreetsWithoutIntersection = _minStreetsWithoutIntersection;
-        StreetGenGlobals.MaxStreetsWithoutIntersection = _maxStreetsWithoutIntersection;
-        StreetGenGlobals.MaxTurnsBetweenIntersection = _maxTurnsBetweenIntersection;
-        StreetGenGlobals.MinStreetsBetweenTurns = _minStreetsBetweenTurns;
-        StreetGenGlobals.MinStreetsAfterIntersectionBeforeTurn = _minStreetsAfterIntersectionBeforeTurn;
+        RoadGenGlobals.MinStreetsWithoutIntersection = _minStreetsWithoutIntersection;
+        RoadGenGlobals.MaxStreetsWithoutIntersection = _maxStreetsWithoutIntersection;
+        RoadGenGlobals.MaxTurnsBetweenIntersection = _maxTurnsBetweenIntersection;
+        RoadGenGlobals.MinStreetsBetweenTurns = _minStreetsBetweenTurns;
+        RoadGenGlobals.MinStreetsBeforeFirstTurn = _minStreetsAfterIntersectionBeforeTurn;
         
-        StreetGenGlobals.AllowedConsecutiveTurnsInSameOrientation = _allowedConsecutiveTurnsInSameOrientation;
-        StreetGenGlobals.XIntersectionLikelihood = _xIntersectionLikelihood;
-        StreetGenGlobals.PreventLoopAroundTurns = _preventLoopAroundTurns;
-        StreetGenGlobals.IStreetLikelihood = _iStreetLikelihood;
+        RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation = _allowedConsecutiveTurnsInSameOrientation;
+        RoadGenGlobals.XIntersectionLikelihood = _xIntersectionLikelihood;
+        RoadGenGlobals.PreventLoopAroundTurns = _preventLoopAroundTurns;
+        RoadGenGlobals.IStreetLikelihood = _iStreetLikelihood;
 
-        StreetGenGlobals.IShapedStreetsCount = 0;
-        StreetGenGlobals.LShapedStreetsCount = 0;
-        StreetGenGlobals.TotalCellCount = 1;
-        StreetGenGlobals.Counter = 0;
+        RoadGenGlobals.IShapedStreetsCount = 0;
+        RoadGenGlobals.LShapedStreetsCount = 0;
+        RoadGenGlobals.TotalCellCount = 1;
+        RoadGenGlobals.StepCounter = 0;
 
-        if (StreetGenGlobals.EmptyCellsBetweenStreets != _emptyCellsBetweenStreets)
+        if (RoadGenGlobals.CellsBetweenRoads != _emptyCellsBetweenStreets)
         {
-            StreetGenGlobals.EmptyCellsBetweenStreets = _emptyCellsBetweenStreets;
+            RoadGenGlobals.CellsBetweenRoads = _emptyCellsBetweenStreets;
 
-            if (StreetGenGlobals.EmptyCellsBetweenStreets != 1)
+            if (RoadGenGlobals.CellsBetweenRoads != 1)
             {
                 bool horizontalRightCheck((int x, int y) offset) { return offset.y != 0 || offset.x > 0; };
                 bool horizontalLeftCheck((int x, int y) offset) { return offset.y != 0 || offset.x < 0; };
                 bool verticalUpCheck((int x, int y) offset) { return offset.x != 0 || offset.y < 0; };
                 bool verticalDownCheck((int x, int y) offset) { return offset.x != 0 || offset.y > 0; };
 
-                StreetGenGlobals.IMaskOffsets = GenerateMaskOffset(StreetGenCache.IBaseMaskOffsets, horizontalRightCheck);
-                StreetGenGlobals.LForwardMaskOffsets = GenerateMaskOffset(StreetGenCache.LBaseForwardMaskOffsets, horizontalLeftCheck);
-                StreetGenGlobals.TForwardMaskOffsets = GenerateMaskOffset(StreetGenCache.TBaseForwardMaskOffsets, horizontalLeftCheck);
-                StreetGenGlobals.XMaskOffsets = GenerateMaskOffset(StreetGenCache.XBaseMaskOffsets, horizontalRightCheck);
+                RoadGenGlobals.IMaskOffsets = GenerateMaskOffset(RoadGenCache.IBaseMaskOffsets, horizontalRightCheck);
+                RoadGenGlobals.LForwardMaskOffsets = GenerateMaskOffset(RoadGenCache.LBaseForwardMaskOffsets, horizontalLeftCheck);
+                RoadGenGlobals.TForwardMaskOffsets = GenerateMaskOffset(RoadGenCache.TBaseForwardMaskOffsets, horizontalLeftCheck);
+                RoadGenGlobals.XMaskOffsets = GenerateMaskOffset(RoadGenCache.XBaseMaskOffsets, horizontalRightCheck);
 
-                StreetGenGlobals.LBackwardMaskOffsets = GenerateMaskOffset(StreetGenCache.LBaseBackwardMaskOffsets, verticalUpCheck, false);
-                StreetGenGlobals.TUpwardMaskOffsets = GenerateMaskOffset(StreetGenCache.TBaseUpwardMaskOffsets, verticalUpCheck, false);
-                StreetGenGlobals.TDownwardMaskOffsets = GenerateMaskOffset(StreetGenCache.TBaseDownwardMaskOffsets, verticalDownCheck, false);
+                RoadGenGlobals.LBackwardMaskOffsets = GenerateMaskOffset(RoadGenCache.LBaseBackwardMaskOffsets, verticalUpCheck, false);
+                RoadGenGlobals.TUpwardMaskOffsets = GenerateMaskOffset(RoadGenCache.TBaseUpwardMaskOffsets, verticalUpCheck, false);
+                RoadGenGlobals.TDownwardMaskOffsets = GenerateMaskOffset(RoadGenCache.TBaseDownwardMaskOffsets, verticalDownCheck, false);
             }
             else
             {
-                StreetGenGlobals.IMaskOffsets = StreetGenCache.IBaseMaskOffsets;
-                StreetGenGlobals.LForwardMaskOffsets = StreetGenCache.LBaseForwardMaskOffsets;
-                StreetGenGlobals.TForwardMaskOffsets = StreetGenCache.TBaseForwardMaskOffsets;
-                StreetGenGlobals.XMaskOffsets = StreetGenCache.XBaseMaskOffsets;
+                RoadGenGlobals.IMaskOffsets = RoadGenCache.IBaseMaskOffsets;
+                RoadGenGlobals.LForwardMaskOffsets = RoadGenCache.LBaseForwardMaskOffsets;
+                RoadGenGlobals.TForwardMaskOffsets = RoadGenCache.TBaseForwardMaskOffsets;
+                RoadGenGlobals.XMaskOffsets = RoadGenCache.XBaseMaskOffsets;
 
-                StreetGenGlobals.LBackwardMaskOffsets = StreetGenCache.LBaseBackwardMaskOffsets;
-                StreetGenGlobals.TUpwardMaskOffsets = StreetGenCache.TBaseUpwardMaskOffsets;
-                StreetGenGlobals.TDownwardMaskOffsets = StreetGenCache.TBaseDownwardMaskOffsets;
+                RoadGenGlobals.LBackwardMaskOffsets = RoadGenCache.LBaseBackwardMaskOffsets;
+                RoadGenGlobals.TUpwardMaskOffsets = RoadGenCache.TBaseUpwardMaskOffsets;
+                RoadGenGlobals.TDownwardMaskOffsets = RoadGenCache.TBaseDownwardMaskOffsets;
             }
         }
     }
@@ -64,23 +64,30 @@ public class GridGenerator
         int y = UnityEngine.Random.Range(0, GridGlobals.Height);
         int randomStartIndex = y * GridGlobals.Width + x;
 
-        yield return StreetGenerator.CreateStreets(randomStartIndex);
+        yield return RoadGenerator.CreateStreets(randomStartIndex);
 
-        Debug.Log($"I shaped: {StreetGenGlobals.TotalCellCount}");
-        Debug.Log($"I shaped: {StreetGenGlobals.IShapedStreetsCount}");
-        Debug.Log($"L shaped: {StreetGenGlobals.LShapedStreetsCount}");
+        Debug.Log($"I shaped: {RoadGenGlobals.TotalCellCount}");
+        Debug.Log($"I shaped: {RoadGenGlobals.IShapedStreetsCount}");
+        Debug.Log($"L shaped: {RoadGenGlobals.LShapedStreetsCount}");
     }
 
     private static (int x, int y)[] GenerateMaskOffset((int x, int y)[] offsets, Func<(int x, int y), bool> addCondition, bool horizontal = true)
     {
+        // Stores all calculated offsets.
         List<(int x, int y)> mask = new List<(int x, int y)>(offsets);
+
+        // Stores the last calculated set of offsets.
         List<(int x, int y)> lastLayer = new List<(int x, int y)>(offsets);
+
+        // The index at which the last layer of offsets started.
         int lastLayerStartIndex = 0;
 
-        for (int i = 0; i < StreetGenGlobals.EmptyCellsBetweenStreets; i++)
+        // For the amount of empty cells that we have to have between roads.
+        for (int i = 0; i < RoadGenGlobals.CellsBetweenRoads; i++)
         {
             lastLayerStartIndex = mask.Count;
 
+            // For each offset in the last layer.
             foreach ((int x, int y) in lastLayer)
             {
                 (int x, int y) upOffset = (0, 0);
@@ -93,88 +100,108 @@ public class GridGenerator
                 (int x, int y) downLeftOffset = (0, 0);
                 (int x, int y) upLeftOffset = (0, 0);
 
+                // If the base mask is based on the horizontal plane.
                 if (horizontal)
                 {
+                    // If the last offset was to the right
                     if (x > 0)
                     {
                         rightOffset = (x + 1, y);
 
+                        // If the last offset was higher then the center
                         if (y > 0)
                         {
                             upOffset = (x, y + 1);
                             upRightOffset = (x + 1, y + 1);
                         }
+                        // If the last offset was lower then the center
                         else if (y < 0)
                         {
                             downOffset = (x, y - 1);
                             downRightOffset = (x + 1, y - 1);
                         }
                     }
+                    // If the last offset was to the left
                     else if (x < 0)
                     {
                         leftOffset = (x - 1, y);
 
+                        // If the last offset was higher then the center
                         if (y > 0)
                         {
                             upOffset = (x, y + 1);
                             upLeftOffset = (x - 1, y + 1);
                         }
+                        // If the last offset was lower then the center
                         else if (y < 0)
                         {
                             downOffset = (x, y - 1);
                             downLeftOffset = (x - 1, y - 1);
                         }
                     }
+                    // If the last offset was centered
                     else
                     {
+                        // If the last offset was higher then the center
                         if (y > 0)
                         {
                             upOffset = (x, y + 1);
                         }
+                        // If the last offset was lower then the center
                         else if (y < 0)
                         {
                             downOffset = (x, y - 1);
                         }
                     }
                 }
+                // If the base mask is based on the vertical plane.
                 else
                 {
+                    // If the last offset was lower then the center
                     if (y > 0)
                     {
                         upOffset = (x, y + 1);
 
+                        // If the last offset was to the right
                         if (x > 0)
                         {
                             rightOffset = (x + 1, y);
                             upRightOffset = (x + 1, y + 1);
                         }
+                        // If the last offset was to the left
                         else if (x < 0)
                         {
                             leftOffset = (x - 1, y);
                             upLeftOffset = (x - 1, y + 1);
                         }
                     }
+                    // If the last offset was higher then the center
                     else if (y < 0)
                     {
                         downOffset = (x, y - 1);
 
+                        // If the last offset was to the right
                         if (x > 0)
                         {
                             rightOffset = (x + 1, y);
                             downRightOffset = (x + 1, y - 1);
                         }
+                        // If the last offset was to the left
                         else if (x < 0)
                         {
                             leftOffset = (x - 1, y);
                             downLeftOffset = (x - 1, y - 1);
                         }
                     }
+                    // If the last offset was centered
                     else
                     {
+                        // If the last offset was to the right
                         if (x > 0)
                         {
                             rightOffset = (x + 1, y);
                         }
+                        // If the last offset was to the left
                         else if (x < 0)
                         {
                             leftOffset = (x - 1, y);
@@ -182,6 +209,7 @@ public class GridGenerator
                     }
                 }
 
+                // If any of the new offset are not already added to the mask, and they pass the adding condition - add them to the mask.
                 if (!mask.Contains(upOffset) && addCondition(upOffset)) mask.Add(upOffset);
                 if (!mask.Contains(downOffset) && addCondition(downOffset)) mask.Add(downOffset);
                 if (!mask.Contains(leftOffset) && addCondition(leftOffset)) mask.Add(leftOffset);
@@ -194,6 +222,7 @@ public class GridGenerator
                 if (!mask.Contains(downLeftOffset) && addCondition(downLeftOffset)) mask.Add(downLeftOffset);
             }
 
+            // Clear the last layer and set it to the current one.
             lastLayer.Clear();
             lastLayer.AddRange(mask.GetRange(lastLayerStartIndex, mask.Count - lastLayerStartIndex));
         }

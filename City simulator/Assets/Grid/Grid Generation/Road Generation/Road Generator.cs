@@ -6,7 +6,7 @@ using UnityEditor.Rendering;
 
 using UnityEngine;
 
-public class StreetGenerator
+public class RoadGenerator
 {
     private static int m_TurnsBetweenIntersectionCount = 0;
     private static int m_StreetsWithoutIntersectionCount = 0;
@@ -21,7 +21,7 @@ public class StreetGenerator
     /// </summary>
     private static (CellOrientation orientation, int count) m_LastTurnOrientationCount = (CellOrientation.None, 0);
     /// <summary>
-    /// Holds the orientation of the last to turns. Used to prevent circling around of the streets and crashing in itself.
+    /// Holds the orientation of the last two turns. Used to prevent circling around of the streets and crashing into itself.
     /// </summary>
     private static (CellOrientation prevTwo, CellOrientation prevOne) m_LastTwoTurnsOrientation = (CellOrientation.None, CellOrientation.None);
 
@@ -46,23 +46,25 @@ public class StreetGenerator
             // Getting the last populated cell.
             int lastCellIndex = populatedToCheck.Pop();
 
+            // Cashing its values
             m_LastCellProps.index = lastCellIndex;
             m_LastCellProps.x = GridUtils.GetXPos(lastCellIndex);
             m_LastCellProps.y = GridUtils.GetYPos(lastCellIndex);
             m_LastCellProps.type = Cell.GetType(lastCellIndex);
             m_LastCellProps.features = Cell.GetFeatures(lastCellIndex);
             m_LastCellProps.orientation = Cell.GetOrientation(lastCellIndex);
+
             // Calculating all valid directions out of the last populated cell.
             CalculateNextPositions(out List<int> indexes, out List<CellOrientation> directionsFromLastCell);
 
             // If, we have hit the end of the grid.
-            if (indexes[0] == StreetGenGlobals.HIT_END_OF_GRID)
+            if (indexes[0] == RoadGenGlobals.HIT_END_OF_GRID)
             {
                 SetDeadEnd(lastCellIndex, Cell.GetOrientation(lastCellIndex));
                 continue;
             }
             // If there are no possible directions that means that the current cell is Dead end street.
-            else if (indexes[0] == StreetGenGlobals.NO_POSSIBLE_DIRECTIONS)
+            else if (indexes[0] == RoadGenGlobals.NO_POSSIBLE_DIRECTIONS)
             {
                 continue;
             }
@@ -86,19 +88,19 @@ public class StreetGenerator
 
                 // Populate the cell
                 PopulateNextStreetCell(index, dirFromLastCell);
-                ++StreetGenGlobals.TotalCellCount;
+                ++RoadGenGlobals.TotalCellCount;
 
-
+                // Used so you can see the streets build step by step or all at once.
                 if (!GameManager.Instance.m_Skip)
                 {
-                    yield return new WaitUntil(() => GameManager.Instance.counter > StreetGenGlobals.Counter || GameManager.Instance.m_Continue);
+                    yield return new WaitUntil(() => GameManager.Instance.counter > RoadGenGlobals.StepCounter || GameManager.Instance.m_Continue);
                 }
                 else
                 {
-                    GameManager.Instance.counter = StreetGenGlobals.Counter;
+                    GameManager.Instance.counter = RoadGenGlobals.StepCounter;
                 }
 
-                StreetGenGlobals.Counter++;
+                RoadGenGlobals.StepCounter++;
             }
 
         } while (populatedToCheck.Count != 0);
@@ -116,10 +118,11 @@ public class StreetGenerator
         // If there are no possible directions
         if (!havePossibleDirections)
         {
-            positions.Add(StreetGenGlobals.NO_POSSIBLE_DIRECTIONS);
+            positions.Add(RoadGenGlobals.NO_POSSIBLE_DIRECTIONS);
             return;
         }
 
+        // Adding each direction to a list so we can shuffle it, and remove elements easier.
         if ((allowedDirections & CellOrientation.East) != 0)
         {
             directions.Add(CellOrientation.East);
@@ -139,6 +142,7 @@ public class StreetGenerator
         {
             directions.Add(CellOrientation.South);
         }
+
         // Shuffle the possible directions so we don't start on the same direction every time.
         directions = new List<CellOrientation>(GridUtils.Shuffle<CellOrientation>(directions.ToArray()));
 
@@ -191,6 +195,7 @@ public class StreetGenerator
                     break;
             }
 
+            // If we have not calculated the the new pos yet.
             if (pos == m_LastCellProps.index)
             {
                 pos = newY * GridGlobals.Width + newX;
@@ -223,7 +228,7 @@ public class StreetGenerator
 
         if (directions.Count == 0)
         {
-            positions.Add(StreetGenGlobals.HIT_END_OF_GRID);
+            positions.Add(RoadGenGlobals.HIT_END_OF_GRID);
         }
     }
 
@@ -312,7 +317,7 @@ public class StreetGenerator
     {
         CellFeature possibleStreets = CellFeature.IShapedStreet | CellFeature.LShapedStreet;
         CellFeature possibleIntersections = CellFeature.TShapedIntersection | CellFeature.XShapedIntersection;
-        bool foundPossible = false;
+        bool foundPossibleProps = false;
 
         CellType newCellType = CellType.Empty;
         CellFeature newCellFeatures = CellFeature.None;
@@ -320,17 +325,20 @@ public class StreetGenerator
         int traversalCost = -1;
 
         // While we have valid options for streets and intersections, but we have not chosen one.
-        while ((possibleIntersections != CellFeature.None || possibleStreets != CellFeature.None) && !foundPossible)
+        while ((possibleIntersections != CellFeature.None || possibleStreets != CellFeature.None) && !foundPossibleProps)
         {
-            
+            // Choose the type of the cell.
             CalculateType();
+
             // If we did not chose a type, we break the loop.
             if (newCellType == CellType.Empty)
             {
                 break;
             }
 
+            // Choose the shape of the cell.
             CalculateShape();
+
             // If we did not chose a feature, we continue the loop so we can try with another type.
             if (newCellFeatures == CellFeature.None)
             {
@@ -338,8 +346,9 @@ public class StreetGenerator
                 continue;
             }
 
-
+            // Choose the Orientation of the cell.
             CalculateOrientation();
+
             // If we did not chose an orientation, we continue the loop so we can try with another feature.
             if (newCellOrientation == CellOrientation.None)
             {
@@ -348,12 +357,13 @@ public class StreetGenerator
                 continue;
             }
 
-            foundPossible = true;
+            foundPossibleProps = true;
         }
 
         #region Adding new cell
 
-        if (!foundPossible)
+        // if we did not found possible properties, we add a dead end instead.
+        if (!foundPossibleProps)
         {
             SetDeadEnd(_currentCellIndex, _dirFromLastCell);
             return;
@@ -371,7 +381,7 @@ public class StreetGenerator
                 m_TurnsBetweenIntersectionCount = 0;
                 traversalCost = 5;
 
-                if (StreetGenGlobals.PreventLoopAroundTurns)
+                if (RoadGenGlobals.PreventLoopAroundTurns)
                 {
                     m_LastTwoTurnsOrientation = (CellOrientation.None, CellOrientation.None);
                 }
@@ -394,14 +404,14 @@ public class StreetGenerator
         switch (newCellFeatures)
         {
             case CellFeature.IShapedStreet:
-                StreetGenGlobals.IShapedStreetsCount++;
+                RoadGenGlobals.IShapedStreetsCount++;
                 break;
             case CellFeature.LShapedStreet:
                 m_LastTurnIndex = m_StreetsWithoutIntersectionCount;
                 m_TurnsBetweenIntersectionCount++;
-                StreetGenGlobals.LShapedStreetsCount++;
+                RoadGenGlobals.LShapedStreetsCount++;
 
-                if (StreetGenGlobals.PreventLoopAroundTurns)
+                if (RoadGenGlobals.PreventLoopAroundTurns)
                 {
                     m_LastTwoTurnsOrientation.prevTwo = m_LastTwoTurnsOrientation.prevOne;
                     m_LastTwoTurnsOrientation.prevOne = newCellOrientation;
@@ -440,9 +450,9 @@ public class StreetGenerator
         void CalculateType()
         {
             // If we have exceeded the maximum allowed street count without an intersection, we will try to create one.
-            if (m_StreetsWithoutIntersectionCount > StreetGenGlobals.MaxStreetsWithoutIntersection)
+            if (m_StreetsWithoutIntersectionCount > RoadGenGlobals.MaxStreetsWithoutIntersection)
             {
-                // If there are no more possible intersections, we break the loop.
+                // If there are no more possible intersections, we return.
                 if (possibleIntersections == CellFeature.None)
                 {
                     return;
@@ -451,9 +461,9 @@ public class StreetGenerator
                 newCellType = CellType.Intersection;
             }
             // If we have exceeded the minimum allowed street count without an intersection, we decide randomly if we will try to create one or not.
-            else if (m_StreetsWithoutIntersectionCount >= StreetGenGlobals.MinStreetsWithoutIntersection)
+            else if (m_StreetsWithoutIntersectionCount >= RoadGenGlobals.MinStreetsWithoutIntersection)
             {
-                switch (UnityEngine.Random.Range(0, 2))
+                switch (Random.Range(0, 2))
                 {
                     case 0:
                         // If there are no more possible streets, we try to create an intersection.
@@ -518,9 +528,9 @@ public class StreetGenerator
                     // Or we are too close to the last intersection to make a turn.
                     // Or we already have at least one turn, but we are too close to it.
                     // We try to make a street.
-                    if ((m_TurnsBetweenIntersectionCount >= StreetGenGlobals.MaxTurnsBetweenIntersection) ||
-                        (m_StreetsWithoutIntersectionCount <= StreetGenGlobals.MinStreetsAfterIntersectionBeforeTurn) ||
-                        (m_LastTurnIndex != -1 && m_StreetsWithoutIntersectionCount - m_LastTurnIndex <= StreetGenGlobals.MinStreetsBetweenTurns))
+                    if ((m_TurnsBetweenIntersectionCount >= RoadGenGlobals.MaxTurnsBetweenIntersection) ||
+                        (m_StreetsWithoutIntersectionCount <= RoadGenGlobals.MinStreetsBeforeFirstTurn) ||
+                        (m_LastTurnIndex != -1 && m_StreetsWithoutIntersectionCount - m_LastTurnIndex <= RoadGenGlobals.MinStreetsBetweenTurns))
                     {
                         // We remove the turn as a possibility
                         if ((possibleStreets & CellFeature.LShapedStreet) != 0)
@@ -538,10 +548,10 @@ public class StreetGenerator
                         break;
                     }
 
-                    tryFeatures(possibleStreets, CellFeature.IShapedStreet, CellFeature.LShapedStreet, StreetGenGlobals.IStreetLikelihood);
+                    tryFeatures(possibleStreets, CellFeature.IShapedStreet, CellFeature.LShapedStreet, RoadGenGlobals.IStreetLikelihood);
                     break;
                 case CellType.Intersection:
-                    tryFeatures(possibleIntersections, CellFeature.XShapedIntersection, CellFeature.TShapedIntersection, StreetGenGlobals.XIntersectionLikelihood);
+                    tryFeatures(possibleIntersections, CellFeature.XShapedIntersection, CellFeature.TShapedIntersection, RoadGenGlobals.XIntersectionLikelihood);
                     break;
                 default:
                     Debug.LogError("This cell type is unsupported.");
@@ -551,9 +561,7 @@ public class StreetGenerator
             // Helper function that chose feature based on random value and if the chosen one is not possible, it tries with the other.
             void tryFeatures(CellFeature possibleFeatures, CellFeature _first, CellFeature _second, float _firstChance)
             {
-                float random = UnityEngine.Random.value;
-
-                if (random <= _firstChance)
+                if (Random.value <= _firstChance)
                 {
                     // If the first feature is possible.
                     if ((possibleFeatures & _first) != 0)
@@ -587,6 +595,7 @@ public class StreetGenerator
             {
                 case CellFeature.IShapedStreet:
 
+                    // Check if we can place it there with that orientation.
                     if (!checkForSpace(_dirFromLastCell))
                     {
                         possibleStreets ^= CellFeature.IShapedStreet;
@@ -600,15 +609,19 @@ public class StreetGenerator
                     switch (_dirFromLastCell)
                     {
                         case CellOrientation.East:
+                            // Check if we can place it there with ether of the two orientations.
                             tryLStreetDirections(CellOrientation.West, CellOrientation.North);
                             break;
                         case CellOrientation.West:
+                            // Check if we can place it there with ether of the two orientations.
                             tryLStreetDirections(CellOrientation.South, CellOrientation.East);
                             break;
                         case CellOrientation.North:
+                            // Check if we can place it there with ether of the two orientations.
                             tryLStreetDirections(CellOrientation.South, CellOrientation.West);
                             break;
                         case CellOrientation.South:
+                            // Check if we can place it there with ether of the two orientations.
                             tryLStreetDirections(CellOrientation.North, CellOrientation.East);
                             break;
                         default:
@@ -619,33 +632,41 @@ public class StreetGenerator
                 case CellFeature.TShapedIntersection:
                     CellOrientation[] orders = { };
 
+                    // Get the possible directions form the cashe
                     switch (_dirFromLastCell)
                     {
                         case CellOrientation.East:
-                            orders = StreetGenCache.TDirectionMask[0];
+                            orders = RoadGenCache.TDirectionMask[0];
                             break;
                         case CellOrientation.West:
-                            orders = StreetGenCache.TDirectionMask[1];
+                            orders = RoadGenCache.TDirectionMask[1];
                             break;
                         case CellOrientation.North:
-                            orders = StreetGenCache.TDirectionMask[2];
+                            orders = RoadGenCache.TDirectionMask[2];
                             break;
                         case CellOrientation.South:
-                            orders = StreetGenCache.TDirectionMask[3];
+                            orders = RoadGenCache.TDirectionMask[3];
                             break;
                         default:
                             break;
                     }
 
+                    // For each possible orientation.
                     for (int i = orders.Length - 1; i >= 0; i--)
                     {
                         int randomRotation = 0;
+
+                        // If we have more then one left option.
                         if (i != 0)
                         {
-                            randomRotation = UnityEngine.Random.Range(0, i);
+                            // Get a random number between 0 and the number of options.
+                            randomRotation = Random.Range(0, i);
                         }
 
+                        // Get the orientation.
                         var orientation = orders[randomRotation];
+
+                        // Check if we can place it there with that orientation.
                         if (checkForSpace(orientation))
                         {
                             newCellOrientation = orientation;
@@ -653,9 +674,12 @@ public class StreetGenerator
                             break;
                         }
 
+                        // If we have more then one left option.
                         if (i != 0)
                         {
-                            (orders[orders.Length - 1], orders[i]) = (orders[i], orders[orders.Length - 1]);
+                            // Change the places of the chosen one with the last possible.
+                            // That way we will not encounter it again, because "i" will decrement.
+                            (orders[randomRotation], orders[i]) = (orders[i], orders[randomRotation]);
                         }
                     }
 
@@ -684,7 +708,7 @@ public class StreetGenerator
             void tryLStreetDirections(CellOrientation _first, CellOrientation _second)
             {
                 // Try first direction.
-                if (UnityEngine.Random.Range(0, 2) == 0)
+                if (Random.Range(0, 2) == 0)
                 {
                     // If the space around the first direction is free.
                     if (checkForSpace(_first))
@@ -719,25 +743,25 @@ public class StreetGenerator
             {
                 // if the last N turn were not oriented the same way as this one.
                 if (m_LastTurnOrientationCount.orientation == _first &&
-                    m_LastTurnOrientationCount.count > StreetGenGlobals.AllowedConsecutiveTurnsInSameOrientation)
+                    m_LastTurnOrientationCount.count > RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation)
                 {
                     return;
                 }
 
                 // If we don't want to try and prevent the streets from looping around and crash into each other.
-                if (!StreetGenGlobals.PreventLoopAroundTurns)
+                if (!RoadGenGlobals.PreventLoopAroundTurns)
                 {
                     newCellOrientation = _first;
                     return;
                 }
 
                 // Try all combinations of denied consecutive orientations (series of orientations that will likely make the streets crash into each other).
-                for (int i = 0; i < StreetGenCache.LDeniedConsecutiveOrientations.Length; i++)
+                for (int i = 0; i < RoadGenCache.LDeniedConsecutiveOrientations.Length; i++)
                 {
                     // If we have a match.
-                    if (m_LastTwoTurnsOrientation.prevTwo == StreetGenCache.LDeniedConsecutiveOrientations[i][0] &&
-                        m_LastTwoTurnsOrientation.prevOne == StreetGenCache.LDeniedConsecutiveOrientations[i][1] &&
-                        _first == StreetGenCache.LDeniedConsecutiveOrientations[i][2])
+                    if (m_LastTwoTurnsOrientation.prevTwo == RoadGenCache.LDeniedConsecutiveOrientations[i][0] &&
+                        m_LastTwoTurnsOrientation.prevOne == RoadGenCache.LDeniedConsecutiveOrientations[i][1] &&
+                        _first == RoadGenCache.LDeniedConsecutiveOrientations[i][2])
                     {
                         // And the second option is possible
                         if (checkForSpace(_second))
@@ -754,75 +778,15 @@ public class StreetGenerator
 
             bool checkForSpace(CellOrientation direction)
             {
-                (int x, int y)[] mask = new (int, int)[0];
-                switch (newCellFeatures)
-                {
-                    case CellFeature.IShapedStreet:
-                        mask = RotateOffsets(StreetGenGlobals.IMaskOffsets, direction);
-                        break;
-                    case CellFeature.LShapedStreet:
-                        if (AreDirectionsOpposite(direction, _dirFromLastCell))
-                        {
-                            mask = RotateOffsets(StreetGenGlobals.LForwardMaskOffsets, direction);
-                        }
-                        else
-                        {
-                            mask = RotateOffsets(StreetGenGlobals.LBackwardMaskOffsets, direction);
-                        }
-                        break;
-                    case CellFeature.TShapedIntersection:
-                        if (AreDirectionsOpposite(direction, _dirFromLastCell))
-                        {
-                            mask = RotateOffsets(StreetGenGlobals.TForwardMaskOffsets, direction);
-                        }
-                        else
-                        {
-                            if (_dirFromLastCell == CellOrientation.West && direction == CellOrientation.South)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.West && direction == CellOrientation.North)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.East && direction == CellOrientation.South)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.East && direction == CellOrientation.North)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.South && direction == CellOrientation.East)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.South && direction == CellOrientation.West)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.North && direction == CellOrientation.East)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (_dirFromLastCell == CellOrientation.North && direction == CellOrientation.West)
-                            {
-                                mask = RotateOffsets(StreetGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                        }
-                        break;
-                    case CellFeature.XShapedIntersection:
-                        mask = RotateOffsets(StreetGenGlobals.XMaskOffsets, direction);
-                        break;
-                    default:
-                        break;
-                }
+                (int x, int y)[] mask = GetRotatedMask(direction);
 
                 int x = GridUtils.GetXPos(_currentCellIndex);
                 int y = GridUtils.GetYPos(_currentCellIndex);
 
-                GridGlobals.PositionsToCheck = (_currentCellIndex, mask);
+                // Used for visualizing the check bounds.
+                GridGlobals.CheckBounds = (_currentCellIndex, mask);
 
+                // For each position, check if there is a street.
                 for (int i = 0; i < mask.Length; i++)
                 {
                     (int x, int y) offset = mask[i];
@@ -836,6 +800,76 @@ public class StreetGenerator
                 }
 
                 return true;
+            }
+
+            (int x, int y)[] GetRotatedMask(CellOrientation direction)
+            {
+                (int x, int y)[] mask = new (int, int)[0];
+
+                switch (newCellFeatures)
+                {
+                    case CellFeature.IShapedStreet:
+                        mask = RotateOffsets(RoadGenGlobals.IMaskOffsets, direction);
+                        break;
+                    case CellFeature.LShapedStreet:
+                        if (AreDirectionsOpposite(direction, _dirFromLastCell))
+                        {
+                            mask = RotateOffsets(RoadGenGlobals.LForwardMaskOffsets, direction);
+                        }
+                        else
+                        {
+                            mask = RotateOffsets(RoadGenGlobals.LBackwardMaskOffsets, direction);
+                        }
+                        break;
+                    case CellFeature.TShapedIntersection:
+                        if (AreDirectionsOpposite(direction, _dirFromLastCell))
+                        {
+                            mask = RotateOffsets(RoadGenGlobals.TForwardMaskOffsets, direction);
+                        }
+                        else
+                        {
+                            if (_dirFromLastCell == CellOrientation.West && direction == CellOrientation.South)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.West && direction == CellOrientation.North)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.East && direction == CellOrientation.South)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.East && direction == CellOrientation.North)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.South && direction == CellOrientation.East)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.South && direction == CellOrientation.West)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.North && direction == CellOrientation.East)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
+                            }
+                            else if (_dirFromLastCell == CellOrientation.North && direction == CellOrientation.West)
+                            {
+                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
+                            }
+                        }
+                        break;
+                    case CellFeature.XShapedIntersection:
+                        mask = RotateOffsets(RoadGenGlobals.XMaskOffsets, direction);
+                        break;
+                    default:
+                        break;
+                }
+
+                return mask;
             }
         }
     }
@@ -865,7 +899,7 @@ public class StreetGenerator
         m_TurnsBetweenIntersectionCount = 0;
         m_LastTurnIndex = -1;
 
-        if (StreetGenGlobals.PreventLoopAroundTurns)
+        if (RoadGenGlobals.PreventLoopAroundTurns)
         {
             m_LastTwoTurnsOrientation = (CellOrientation.None, CellOrientation.None);
         }

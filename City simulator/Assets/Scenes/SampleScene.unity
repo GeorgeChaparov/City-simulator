@@ -196,17 +196,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_GridSize: 500
   m_CellSize: 10
+  m_CellsBetweenRoads: 1
   m_MinStreetsWithoutIntersection: 100
   m_MaxStreetsWithoutIntersection: 300
-  m_MaxTurnsBetweenIntersection: 5
-  m_MinStreetsBetweenTurns: 30
-  m_MinStreetsAfterIntersectionBeforeTurn: 15
-  m_EmptyCellsBetweenStreets: 25
-  m_AllowedConsecutiveTurnsInSameOrientation: 1
   m_TIntersectionLikelihood: 0.65
   m_XIntersectionLikelihood: 0.35000002
   m_IStreetLikelihood: 0.95
   m_LStreetLikelihood: 0.050000012
+  m_MaxTurnsBetweenIntersection: 5
+  m_MinStreetsBetweenTurns: 30
+  m_MinStreetsBeforeFirstTurn: 0
+  m_AllowedConsecutiveTurnsInSameOrientation: 1
   m_PreventLoopAroundTurns: 1
 --- !u!4 &353399498
 Transform:

@@ -57,7 +57,7 @@ public class GridVisualizer : MonoBehaviour
             VisualizeStreet(index, type, orientation, features);
         }
 
-        foreach (var pos in GridGlobals.PositionsToCheck.Item2)
+        foreach (var pos in GridGlobals.CheckBounds.Item2)
         {
             VisualizeCheckedPosition(pos);
         }
@@ -229,7 +229,7 @@ public class GridVisualizer : MonoBehaviour
 
     private void VisualizeCheckedPosition((int x, int y) _pos)
     {
-        int index = GridGlobals.PositionsToCheck.Item1;
+        int index = GridGlobals.CheckBounds.Item1;
 
         int x = GridUtils.GetXPos(index);
         int y = GridUtils.GetYPos(index);

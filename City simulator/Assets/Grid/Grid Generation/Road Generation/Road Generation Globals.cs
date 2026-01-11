@@ -1,9 +1,10 @@
 using UnityEngine;
 
-public class StreetGenGlobals
+public class RoadGenGlobals
 {
     public static readonly int HIT_END_OF_GRID = -100;
     public static readonly int NO_POSSIBLE_DIRECTIONS = -101;
+
 
     public static int MinStreetsWithoutIntersection = 10;
     public static int MaxStreetsWithoutIntersection = 20;
@@ -12,23 +13,38 @@ public class StreetGenGlobals
 
     public static int MinStreetsBetweenTurns = 0;
 
-    public static int MinStreetsAfterIntersectionBeforeTurn = 0;
+    /// <summary>
+    /// How many streets do we have to have before the first turn.
+    /// </summary>
+    public static int MinStreetsBeforeFirstTurn = 0;
 
-    public static int EmptyCellsBetweenStreets = 1;
+    public static int CellsBetweenRoads = 0;
 
+    /// <summary>
+    /// How many turns in the same direction, that come one after another, are allowed between two intersections.
+    /// </summary>
     public static int AllowedConsecutiveTurnsInSameOrientation = 2;
 
+    /// <summary>
+    /// How likely is to choose X shaped intersection.
+    /// </summary>
     public static float XIntersectionLikelihood = 0.5f;
 
+    /// <summary>
+    /// If we want to prevent the road from making 3 or more turns in the same direction and so making a circle and crashing into itself.
+    /// </summary>
     public static bool PreventLoopAroundTurns = true;
 
+    /// <summary>
+    /// How likely is to choose I shaped street.
+    /// </summary>
     public static float IStreetLikelihood = 0.5f;
 
     public static int IShapedStreetsCount = 0;
     public static int LShapedStreetsCount = 0;
     public static int TotalCellCount = 1;
 
-    public static int Counter = 0;
+    public static int StepCounter = 0;
 
     public static (int x, int y)[] IMaskOffsets;
     public static (int x, int y)[] LForwardMaskOffsets;
