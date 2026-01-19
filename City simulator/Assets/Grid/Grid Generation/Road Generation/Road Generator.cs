@@ -377,7 +377,7 @@ public class RoadGenerator
                 lastTurnIndex = -1;
                 turnsBetweenIntersectionCount = 0;
                 traversalCost = 5;
-                RoadGenGlobals.IntersectionIndexes.Add(currentCellIndex);
+                RoadGenGlobals.IntersectionIndexes.Enqueue(currentCellIndex);
 
                 if (RoadGenGlobals.PreventLoopAroundTurns)
                 {
@@ -408,7 +408,7 @@ public class RoadGenerator
                 lastTurnIndex = streetsWithoutIntersectionCount;
                 turnsBetweenIntersectionCount++;
                 RoadGenGlobals.LShapedStreetsCount++;
-                RoadGenGlobals.TurnIndexes.Add(currentCellIndex);
+                RoadGenGlobals.TurnIndexes.Enqueue(currentCellIndex);
 
                 if (RoadGenGlobals.PreventLoopAroundTurns)
                 {

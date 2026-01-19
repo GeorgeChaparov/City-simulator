@@ -6,8 +6,8 @@ public class GridGenerator
 {
     public static void Init(int minStreetsWithoutIntersection, int maxStreetsWithoutIntersection, int maxTurnsBetweenIntersection,
         int minStreetsBetweenTurns, int minStreetsAfterIntersectionBeforeTurn, int emptyCellsBetweenStreets, int allowedConsecutiveTurnsInSameOrientation,
-        float xIntersectionLikelihood, bool preventLoopAroundTurns, float iStreetLikelihood, float streetsAfterXIntersectionBeforeDeadEnd,
-            float streetsAfterTIntersectionBeforeDeadEnd, float iStreetsAfterLStreetsBeforeDeadEnd) 
+        float xIntersectionLikelihood, bool preventLoopAroundTurns, float iStreetLikelihood, int streetsAfterXIntersectionBeforeDeadEnd,
+            int streetsAfterTIntersectionBeforeDeadEnd, int iStreetsAfterLStreetsBeforeDeadEnd) 
     {
         // Intersection related.
         RoadGenGlobals.MinStreetsWithoutIntersection = minStreetsWithoutIntersection;
@@ -75,7 +75,7 @@ public class GridGenerator
         yield return RoadGenerator.Generate(randomStartIndex);
 
         // Fix any mistakes made during generation (make the road look prettier).
-        yield return RoadReconstructor.Reconstruct(randomStartIndex);
+        yield return RoadReconstructor.Reconstruct();
 
         Debug.Log($"I shaped: {RoadGenGlobals.TotalCellCount}");
         Debug.Log($"I shaped: {RoadGenGlobals.IShapedStreetsCount}");

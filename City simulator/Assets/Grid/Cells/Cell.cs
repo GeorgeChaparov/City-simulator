@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+using UnityEngine;
+
 [Flags]
 public enum CellOrientation
 {
@@ -74,6 +76,17 @@ public static class Cell
 
         CalculateTravelCost(index);
         CalculateTraversability(index);
+    }
+
+    static public void ClearCell(int index)
+    {
+        type[index] = new CellType();
+        baseTravelCost[index] = new float();
+        travelCost[index] = new float();
+        occupants[index] = new List<Agent>();
+        traversableBy[index] = new AgentType();
+        features[index] = new CellFeature();
+        orientation[index] = new CellOrientation();
     }
 
     public static CellFeature GetFeatures(int index)

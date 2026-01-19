@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 public class RoadGenGlobals
 {
@@ -45,12 +44,12 @@ public class RoadGenGlobals
     public static int LShapedStreetsCount = 0;
     public static int TotalCellCount = 1;
 
-    public static List<int> IntersectionIndexes = new List<int>();
-    public static List<int> TurnIndexes = new List<int>();
+    public static Queue<int> IntersectionIndexes = new Queue<int>();
+    public static Queue<int> TurnIndexes = new Queue<int>();
 
-    public static float StreetsAfterXIntersectionBeforeDeadEnd = 10;
-    public static float StreetsAfterTIntersectionBeforeDeadEnd = 10;
-    public static float IStreetsAfterLStreetsBeforeDeadEnd = 10;
+    public static int StreetsAfterXIntersectionBeforeDeadEnd = 10;
+    public static int StreetsAfterTIntersectionBeforeDeadEnd = 10;
+    public static int IStreetsAfterLStreetsBeforeDeadEnd = 10;
 
     public static int StepCounter = 0;
 
