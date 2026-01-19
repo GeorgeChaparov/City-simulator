@@ -63,10 +63,10 @@ public class GridVisualizer : MonoBehaviour
         }
     }
 
-    public void VisualizeStreet(int _index, CellType _cellType, CellOrientation _cellOrientation, CellFeature _cellFeatures)
+    public void VisualizeStreet(int index, CellType cellType, CellOrientation cellOrientation, CellFeature cellFeatures)
     {
-        int x = GridUtils.GetXPos(_index);
-        int y = GridUtils.GetYPos(_index);
+        int x = GridUtils.GetXPos(index);
+        int y = GridUtils.GetYPos(index);
         
         int cellSize = GridGlobals.CellSize;
         float halfCellSize = cellSize / 2;
@@ -86,15 +86,15 @@ public class GridVisualizer : MonoBehaviour
         float y2 = position.y + halfCellSize;
 
 
-        switch (_cellType)
+        switch (cellType)
         {
             case CellType.Street:
 
-                if ((_cellFeatures & CellFeature.IShapedStreet) != 0)
+                if ((cellFeatures & CellFeature.IShapedStreet) != 0)
                 {
                     Gizmos.color = Color.yellow;
 
-                    switch (_cellOrientation)
+                    switch (cellOrientation)
                     {
                         case CellOrientation.East:
                             Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
@@ -136,11 +136,11 @@ public class GridVisualizer : MonoBehaviour
                             break;
                     }
                 }
-                else if ((_cellFeatures & CellFeature.LShapedStreet) != 0)
+                else if ((cellFeatures & CellFeature.LShapedStreet) != 0)
                 {
                     Gizmos.color = Color.red;
 
-                    switch (_cellOrientation)
+                    switch (cellOrientation)
                     {
                         case CellOrientation.East:
                             Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
@@ -162,10 +162,10 @@ public class GridVisualizer : MonoBehaviour
                             break;
                     }
                 }
-                else if ((_cellFeatures & CellFeature.DeadEnd) != 0)
+                else if ((cellFeatures & CellFeature.DeadEnd) != 0)
                 {
                     Gizmos.color = Color.pink;
-                    switch (_cellOrientation)
+                    switch (cellOrientation)
                     {
                         case CellOrientation.East:
                             Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 + cellSize, y1));
@@ -193,11 +193,11 @@ public class GridVisualizer : MonoBehaviour
                 }
                 break;
             case CellType.Intersection:
-                if ((_cellFeatures & CellFeature.TShapedIntersection) != 0)
+                if ((cellFeatures & CellFeature.TShapedIntersection) != 0)
                 {
                     Gizmos.color = Color.green;
 
-                    switch (_cellOrientation)
+                    switch (cellOrientation)
                     {
                         case CellOrientation.East:
                             Gizmos.DrawLine(new Vector2(x1, y1), new Vector2(x1 , y1 + cellSize));
@@ -215,7 +215,7 @@ public class GridVisualizer : MonoBehaviour
                             break;
                     }
                 }
-                else if ((_cellFeatures & CellFeature.XShapedIntersection) != 0)
+                else if ((cellFeatures & CellFeature.XShapedIntersection) != 0)
                 {
                     Gizmos.color = Color.black;
                     Gizmos.DrawSphere(position, cellSize / 4);

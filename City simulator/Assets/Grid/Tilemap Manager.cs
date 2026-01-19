@@ -4,27 +4,27 @@ using UnityEngine.Tilemaps;
 public class TilemapManager : MonoBehaviour
 {
     public static TilemapManager instance;
-    private int m_GridSize = 30;
+    private int gridSize = 30;
 
-    public int gridSize
+    public int GridSize
     {
         set {
-            if (!m_Tilemap)
+            if (!tilemap)
             {
                 Debug.LogError("Grid not set");
             }
 
-            m_Tilemap.size = new Vector3Int(value, value);
+            tilemap.size = new Vector3Int(value, value);
         }
     }
 
 
-    private int m_CellSize = 1;
+    private int cellSize = 1;
     public int CellSize
     {
         set
         {
-            if (!m_Tilemap)
+            if (!tilemap)
             {
                 Debug.LogError("Grid not set");
             }
@@ -33,10 +33,10 @@ public class TilemapManager : MonoBehaviour
     }
 
     [SerializeField]
-    private Grid m_Grid;
+    private Grid grid;
 
     [SerializeField]
-    private Tilemap m_Tilemap;
+    private Tilemap tilemap;
 
     void Awake()
     {

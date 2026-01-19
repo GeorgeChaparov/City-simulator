@@ -7,9 +7,9 @@ public class GameManager : MonoBehaviour
 
     public int counter = 0;
 
-    public bool m_Continue = false;
-    public bool m_Skip = false;
-    public bool m_Reset = false;
+    public bool Continue = false;
+    public bool Skip = false;
+    public bool Reset = false;
 
     void Awake()
     {
@@ -34,27 +34,27 @@ public class GameManager : MonoBehaviour
 
         if (Input.GetKeyUp(KeyCode.C))
         {
-            m_Continue = true;
+            Continue = true;
         }
 
         if (Input.GetKeyUp(KeyCode.S))
         {
-            m_Skip = true;
-            m_Continue = true;
+            Skip = true;
+            Continue = true;
         }
 
         if (Input.GetKeyUp(KeyCode.B))
         {
-            m_Skip = false;
-            m_Continue = false;
+            Skip = false;
+            Continue = false;
         }
 
         if (Input.GetKeyUp(KeyCode.R))
         {
-            m_Reset = true;
+            Reset = true;
 
-            GameManager.Instance.m_Continue = false;
-            GameManager.Instance.m_Skip = false;
+            GameManager.Instance.Continue = false;
+            GameManager.Instance.Skip = false;
             GameManager.Instance.counter = 0;
             Debug.ClearDeveloperConsole();
         }

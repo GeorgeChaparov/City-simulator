@@ -28,203 +28,203 @@ public enum CellFeature
 public static class Cell
 {
     /// <summary> This is the cost that is given when populating the cell. It is used to calculate the real travel cost. </summary>
-    static private float[] m_BaseTravelCost;
+    static private float[] baseTravelCost;
 
-    static private CellType[] m_Type;
+    static private CellType[] type;
 
     /// <summary> This is the real travel cost that is used for calculating the path of the agents. It is based on the base travel cost and the different features of the cell. </summary>
-    static private float[] m_TravelCost;
+    static private float[] travelCost;
 
     /// <summary> Shows which agent/agents is/are in the cell. </summary>
-    static private List<Agent>[] m_Occupants;
+    static private List<Agent>[] occupants;
 
-    static private AgentType[] m_TraversableBy;
+    static private AgentType[] traversableBy;
 
     /// <summary> The features of the cell. Those change the cost of traversing. </summary>
-    static private CellFeature[] m_Features;
+    static private CellFeature[] features;
 
     /// <summary> To where is the cell facing. Used to make better decisions for neighbor placing. </summary>
-    static private CellOrientation[] m_Orientation;
+    static private CellOrientation[] orientation;
 
     static public void Init()
     {
         int width = GridGlobals.Width;
         int height = GridGlobals.Height;
-        m_Type = new CellType[width * height];
-        m_BaseTravelCost = new float[width * height];
-        m_TravelCost = new float[width * height];
-        m_Occupants = new List<Agent>[width * height];
+        type = new CellType[width * height];
+        baseTravelCost = new float[width * height];
+        travelCost = new float[width * height];
+        occupants = new List<Agent>[width * height];
 
-        for (int i = 0; i < m_Occupants.Length; i++)
+        for (int i = 0; i < occupants.Length; i++)
         {
-            m_Occupants[i] = new List<Agent>();
+            occupants[i] = new List<Agent>();
         }
 
-        m_TraversableBy = new AgentType[width * height];
-        m_Features = new CellFeature[width * height];
-        m_Orientation = new CellOrientation[width * height];
+        traversableBy = new AgentType[width * height];
+        features = new CellFeature[width * height];
+        orientation = new CellOrientation[width * height];
     }
 
-    static public void PopulateCell(int _index, CellType _type, int _baseTravelCost, CellFeature _featuresBitmap, CellOrientation _orientation)
+    static public void PopulateCell(int index, CellType type, int baseTravelCost, CellFeature featuresBitmap, CellOrientation orientation)
     {
-        m_Type[_index] = _type;
-        m_BaseTravelCost[_index] = _baseTravelCost;
-        m_Features[_index] = _featuresBitmap;
-        m_Orientation[_index] = _orientation;
+        Cell.type[index] = type;
+        Cell.baseTravelCost[index] = baseTravelCost;
+        features[index] = featuresBitmap;
+        Cell.orientation[index] = orientation;
 
-        CalculateTravelCost(_index);
-        CalculateTraversability(_index);
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
     }
 
-    public static CellFeature GetFeatures(int _index)
+    public static CellFeature GetFeatures(int index)
     {
-        return m_Features[_index];
+        return features[index];
     }
 
-    public static void SetFeature(int _index, CellFeature _featuresBitmap)
+    public static void SetFeature(int index, CellFeature featuresBitmap)
     {
-        m_Features[_index] = _featuresBitmap;
+        features[index] = featuresBitmap;
 
-        CalculateTravelCost(_index);
-        CalculateTraversability(_index);
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
     }
 
-    public static void AddFeature(int _index, CellFeature _featureBitmap)
+    public static void AddFeature(int index, CellFeature featureBitmap)
     {
-        m_Features[_index] |= _featureBitmap;
+        features[index] |= featureBitmap;
 
-        CalculateTravelCost(_index);
-        CalculateTraversability(_index);
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
     }
 
-    public static void RemoveFeature(int _index, CellFeature _featureBitmap)
+    public static void RemoveFeature(int index, CellFeature featureBitmap)
     {
-        m_Features[_index] &= ~_featureBitmap;
+        features[index] &= ~featureBitmap;
 
-        CalculateTravelCost(_index);
-        CalculateTraversability(_index);
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
     }
 
-    public static CellType GetType(int _index)
+    public static CellType GetType(int index)
     {
-        return m_Type[_index];
+        return type[index];
     }
 
-    public static void SetType(int _index, CellType _type, CellFeature _featuresBitmap)
+    public static void SetType(int index, CellType type, CellFeature featuresBitmap)
     {
-        m_Type[_index] = _type;
-        m_Features[_index] = _featuresBitmap;
+        Cell.type[index] = type;
+        features[index] = featuresBitmap;
 
-        CalculateTravelCost(_index);
-        CalculateTraversability(_index);
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
     }
 
-    public static List<Agent> GetOccupants(int _index)
+    public static List<Agent> GetOccupants(int index)
     {
-        return m_Occupants[_index];
+        return occupants[index];
     }
 
-    public static void AddOccupant(int _index, Agent _occupant)
+    public static void AddOccupant(int index, Agent occupant)
     {
-        m_Occupants[_index].Add(_occupant);
+        occupants[index].Add(occupant);
     }
 
-    public static void RemoveOccupant(int _index, Agent _occupant)
+    public static void RemoveOccupant(int index, Agent occupant)
     {
-        m_Occupants[_index].Remove(_occupant);
+        occupants[index].Remove(occupant);
     }
 
-    public static float GetTravelCost(int _index)
+    public static float GetTravelCost(int index)
     {
-        return m_TravelCost[_index];
+        return travelCost[index];
     }
 
-    public static AgentType GetTraversableBy(int _index)
+    public static AgentType GetTraversableBy(int index)
     {
-        return m_TraversableBy[_index];
+        return traversableBy[index];
     }
 
-    public static CellOrientation GetOrientation(int _index)
+    public static CellOrientation GetOrientation(int index)
     {
-        return m_Orientation[_index];
+        return orientation[index];
     }
 
-    private static void CalculateTraversability(int _index)
+    private static void CalculateTraversability(int index)
     {
-        switch (m_Type[_index])
+        switch (type[index])
         {
             case CellType.Empty:
-                m_TraversableBy[_index] = AgentType.None;
+                traversableBy[index] = AgentType.None;
                 break;
             case CellType.Building:
-                m_TraversableBy[_index] = AgentType.None;
+                traversableBy[index] = AgentType.None;
                 break;
             case CellType.Sidewalk:
-                m_TraversableBy[_index] = AgentType.Person;
+                traversableBy[index] = AgentType.Person;
                 break;
             case CellType.Street:
                 AgentType agentsAbleToTravers = AgentType.Car;
 
-                if ((m_Features[_index] & CellFeature.Crosswalk) != 0)
+                if ((features[index] & CellFeature.Crosswalk) != 0)
                 {
                     agentsAbleToTravers |= AgentType.Person;
                 }
 
-                m_TraversableBy[_index] = agentsAbleToTravers;
+                traversableBy[index] = agentsAbleToTravers;
                 break;
             default:
                 break;
         }
     }
 
-    private static void CalculateTravelCost(int _index) 
+    private static void CalculateTravelCost(int index) 
     {
-        CellFeature features = m_Features[_index];
+        CellFeature feature = features[index];
 
-        float finalCost = m_BaseTravelCost[_index];
+        float finalCost = baseTravelCost[index];
 
-        if ((features & CellFeature.None) != 0)
+        if ((feature & CellFeature.None) != 0)
         {
-            m_TravelCost[_index] = finalCost;
+            travelCost[index] = finalCost;
             return;
         }
 
-        switch (m_Type[_index])
+        switch (type[index])
         {
             case CellType.Empty:
                 break;
             case CellType.Building:
-                m_TravelCost[_index] = int.MaxValue;
+                travelCost[index] = int.MaxValue;
                 break;
             case CellType.Sidewalk:
-                if ((features & CellFeature.Bench) != 0)
+                if ((feature & CellFeature.Bench) != 0)
                 {
                     finalCost -= 0.8f;
                 }
 
-                if ((features & CellFeature.Trees) != 0)
+                if ((feature & CellFeature.Trees) != 0)
                 {
                     finalCost -= 2f;
                 }
                 break;
             case CellType.Street:
-                if ((features & CellFeature.RoadBlock) != 0)
+                if ((feature & CellFeature.RoadBlock) != 0)
                 {
-                    m_TravelCost[_index] = int.MaxValue;
+                    travelCost[index] = int.MaxValue;
                     return;
                 }
 
-                if ((features & CellFeature.SpeedBump) != 0)
+                if ((feature & CellFeature.SpeedBump) != 0)
                 {
                     finalCost += 0.5f;
                 }
 
-                if ((features & CellFeature.RoadWork) != 0)
+                if ((feature & CellFeature.RoadWork) != 0)
                 {
                     finalCost += 5f;
                 }
 
-                if ((features & CellFeature.Potholes) != 0)
+                if ((feature & CellFeature.Potholes) != 0)
                 {
                     finalCost += 5f;
                 }
@@ -233,6 +233,6 @@ public static class Cell
                 break;
         }
 
-        m_TravelCost[_index] = finalCost;
+        travelCost[index] = finalCost;
     }
 }

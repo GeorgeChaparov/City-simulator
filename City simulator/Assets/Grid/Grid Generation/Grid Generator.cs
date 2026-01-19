@@ -4,29 +4,36 @@ using System.Collections.Generic;
 using UnityEngine;
 public class GridGenerator
 {
-    public static void Init(int _minStreetsWithoutIntersection, int _maxStreetsWithoutIntersection, int _maxTurnsBetweenIntersection,
-        int _minStreetsBetweenTurns, int _minStreetsAfterIntersectionBeforeTurn, int _emptyCellsBetweenStreets, int _allowedConsecutiveTurnsInSameOrientation,
-        float _xIntersectionLikelihood, bool _preventLoopAroundTurns, float _iStreetLikelihood)
+    public static void Init(int minStreetsWithoutIntersection, int maxStreetsWithoutIntersection, int maxTurnsBetweenIntersection,
+        int minStreetsBetweenTurns, int minStreetsAfterIntersectionBeforeTurn, int emptyCellsBetweenStreets, int allowedConsecutiveTurnsInSameOrientation,
+        float xIntersectionLikelihood, bool preventLoopAroundTurns, float iStreetLikelihood, float streetsAfterXIntersectionBeforeDeadEnd,
+            float streetsAfterTIntersectionBeforeDeadEnd, float iStreetsAfterLStreetsBeforeDeadEnd) 
     {
-        RoadGenGlobals.MinStreetsWithoutIntersection = _minStreetsWithoutIntersection;
-        RoadGenGlobals.MaxStreetsWithoutIntersection = _maxStreetsWithoutIntersection;
-        RoadGenGlobals.MaxTurnsBetweenIntersection = _maxTurnsBetweenIntersection;
-        RoadGenGlobals.MinStreetsBetweenTurns = _minStreetsBetweenTurns;
-        RoadGenGlobals.MinStreetsBeforeFirstTurn = _minStreetsAfterIntersectionBeforeTurn;
-        
-        RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation = _allowedConsecutiveTurnsInSameOrientation;
-        RoadGenGlobals.XIntersectionLikelihood = _xIntersectionLikelihood;
-        RoadGenGlobals.PreventLoopAroundTurns = _preventLoopAroundTurns;
-        RoadGenGlobals.IStreetLikelihood = _iStreetLikelihood;
+        // Intersection related.
+        RoadGenGlobals.MinStreetsWithoutIntersection = minStreetsWithoutIntersection;
+        RoadGenGlobals.MaxStreetsWithoutIntersection = maxStreetsWithoutIntersection;
+        RoadGenGlobals.MaxTurnsBetweenIntersection = maxTurnsBetweenIntersection;
+        RoadGenGlobals.MinStreetsBetweenTurns = minStreetsBetweenTurns;
+        RoadGenGlobals.MinStreetsBeforeFirstTurn = minStreetsAfterIntersectionBeforeTurn;
+        RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd = streetsAfterXIntersectionBeforeDeadEnd;
+        RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd = streetsAfterTIntersectionBeforeDeadEnd;
 
+        // Street related.
+        RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation = allowedConsecutiveTurnsInSameOrientation;
+        RoadGenGlobals.XIntersectionLikelihood = xIntersectionLikelihood;
+        RoadGenGlobals.PreventLoopAroundTurns = preventLoopAroundTurns;
+        RoadGenGlobals.IStreetLikelihood = iStreetLikelihood;
+        RoadGenGlobals.IStreetsAfterLStreetsBeforeDeadEnd = iStreetsAfterLStreetsBeforeDeadEnd;
+
+        // Counters
         RoadGenGlobals.IShapedStreetsCount = 0;
         RoadGenGlobals.LShapedStreetsCount = 0;
         RoadGenGlobals.TotalCellCount = 1;
         RoadGenGlobals.StepCounter = 0;
 
-        if (RoadGenGlobals.CellsBetweenRoads != _emptyCellsBetweenStreets)
+        if (RoadGenGlobals.CellsBetweenRoads != emptyCellsBetweenStreets)
         {
-            RoadGenGlobals.CellsBetweenRoads = _emptyCellsBetweenStreets;
+            RoadGenGlobals.CellsBetweenRoads = emptyCellsBetweenStreets;
 
             if (RoadGenGlobals.CellsBetweenRoads != 1)
             {
@@ -64,7 +71,11 @@ public class GridGenerator
         int y = UnityEngine.Random.Range(0, GridGlobals.Height);
         int randomStartIndex = y * GridGlobals.Width + x;
 
-        yield return RoadGenerator.CreateStreets(randomStartIndex);
+        // Generate the Road
+        yield return RoadGenerator.Generate(randomStartIndex);
+
+        // Fix any mistakes made during generation (make the road look prettier).
+        yield return RoadReconstructor.Reconstruct(randomStartIndex);
 
         Debug.Log($"I shaped: {RoadGenGlobals.TotalCellCount}");
         Debug.Log($"I shaped: {RoadGenGlobals.IShapedStreetsCount}");
