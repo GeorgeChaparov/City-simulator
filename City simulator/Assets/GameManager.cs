@@ -52,11 +52,17 @@ public class GameManager : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.R))
         {
             Reset = true;
-
-            GameManager.Instance.Continue = false;
-            GameManager.Instance.Skip = false;
-            GameManager.Instance.counter = 0;
+            Skip = false;
+            counter = 0;
             Debug.ClearDeveloperConsole();
         }
+    }
+
+    public void ResetState()
+    {
+        counter = 0;
+        Continue = false;
+        Skip = false;
+        Reset = false;
     }
 }

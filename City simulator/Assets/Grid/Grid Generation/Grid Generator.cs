@@ -17,6 +17,8 @@ public class GridGenerator
         RoadGenGlobals.MinStreetsBeforeFirstTurn = minStreetsAfterIntersectionBeforeTurn;
         RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd = streetsAfterXIntersectionBeforeDeadEnd;
         RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd = streetsAfterTIntersectionBeforeDeadEnd;
+        RoadGenGlobals.TIntersectionIndexes = new Queue<int>();
+        RoadGenGlobals.XIntersectionIndexes = new Queue<int>();
 
         // Street related.
         RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation = allowedConsecutiveTurnsInSameOrientation;
@@ -24,6 +26,8 @@ public class GridGenerator
         RoadGenGlobals.PreventLoopAroundTurns = preventLoopAroundTurns;
         RoadGenGlobals.IStreetLikelihood = iStreetLikelihood;
         RoadGenGlobals.IStreetsAfterLStreetsBeforeDeadEnd = iStreetsAfterLStreetsBeforeDeadEnd;
+        RoadGenGlobals.TurnIndexes = new Queue<int>();
+        RoadGenGlobals.DeadEndIndexes = new Queue<int>();
 
         // Counters
         RoadGenGlobals.IShapedStreetsCount = 0;
@@ -73,6 +77,10 @@ public class GridGenerator
 
         // Generate the Road
         yield return RoadGenerator.Generate(randomStartIndex);
+
+        GridVisualizer.Instance.StopVisualizingCheckPos();
+        GameManager.Instance.ResetState();
+        RoadGenGlobals.StepCounter = 0;
 
         // Fix any mistakes made during generation (make the road look prettier).
         yield return RoadReconstructor.Reconstruct();

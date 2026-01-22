@@ -89,6 +89,17 @@ public static class Cell
         orientation[index] = new CellOrientation();
     }
 
+    static public void UpdateCell(int index, CellType type, int baseTravelCost, CellFeature featuresBitmap, CellOrientation orientation)
+    {
+        Cell.type[index] = type;
+        Cell.baseTravelCost[index] = baseTravelCost;
+        features[index] = featuresBitmap;
+        Cell.orientation[index] = orientation;
+
+        CalculateTravelCost(index);
+        CalculateTraversability(index);
+    }
+
     public static CellFeature GetFeatures(int index)
     {
         return features[index];

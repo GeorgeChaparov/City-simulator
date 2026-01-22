@@ -148,8 +148,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a62367ead18e67c4cb18123a9bfb9c04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Grid: {fileID: 427953115}
-  m_Tilemap: {fileID: 1379209876}
+  grid: {fileID: 0}
+  tilemap: {fileID: 0}
 --- !u!4 &329869215
 Transform:
   m_ObjectHideFlags: 0
@@ -194,20 +194,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41c653d111076e44fa8db11f3f291dad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_GridSize: 500
-  m_CellSize: 10
-  m_CellsBetweenRoads: 10
-  m_MinStreetsWithoutIntersection: 100
-  m_MaxStreetsWithoutIntersection: 300
-  m_TIntersectionLikelihood: 0.65
-  m_XIntersectionLikelihood: 0.35000002
-  m_IStreetLikelihood: 0.95
-  m_LStreetLikelihood: 0.050000012
-  m_MaxTurnsBetweenIntersection: 5
-  m_MinStreetsBetweenTurns: 30
-  m_MinStreetsBeforeFirstTurn: 50
-  m_AllowedConsecutiveTurnsInSameOrientation: 1
-  m_PreventLoopAroundTurns: 1
+  gridSize: 500
+  cellSize: 30
+  cellsBetweenRoads: 20
+  minStreetsWithoutIntersection: 50
+  maxStreetsWithoutIntersection: 100
+  tIntersectionLikelihood: 0.227
+  xIntersectionLikelihood: 0.773
+  iStreetLikelihood: 0.85
+  lStreetLikelihood: 0.14999998
+  maxTurnsBetweenIntersection: 2
+  minStreetsBetweenTurns: 22
+  minStreetsBeforeFirstTurn: 20
+  allowedConsecutiveTurnsInSameOrientation: 2
+  preventLoopAroundTurns: 1
+  streetsAfterXIntersectionBeforeDeadEnd: 15
+  streetsAfterTIntersectionBeforeDeadEnd: 10
+  IStreetsAfterLStreetsBeforeDeadEnd: 20
 --- !u!4 &353399498
 Transform:
   m_ObjectHideFlags: 0
@@ -563,9 +566,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   counter: 0
-  m_Continue: 0
-  m_Skip: 0
-  m_Reset: 0
+  Continue: 0
+  Skip: 0
+  Reset: 0
 --- !u!4 &1162170135
 Transform:
   m_ObjectHideFlags: 0

@@ -12,6 +12,8 @@ public class GridVisualizer : MonoBehaviour
     private Vector3 gridDownLeftCorner = Vector3.zero;
     private Vector3 gridUpRightCorner = Vector3.zero;
 
+    private bool visualizeCheckPos = true;
+
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -57,14 +59,31 @@ public class GridVisualizer : MonoBehaviour
             VisualizeStreet(index, type, orientation, features);
         }
 
+
+        if (!visualizeCheckPos)
+        {
+            return;
+        }
+
         foreach (var pos in GridGlobals.CheckBounds.Item2)
         {
             VisualizeCheckedPosition(pos);
         }
     }
 
+    public void StopVisualizingCheckPos()
+    {
+        visualizeCheckPos = false;
+    }
+
+    public void StartVisualizingCheckPos()
+    {
+        visualizeCheckPos = true;
+    }
+
     public void VisualizeStreet(int index, CellType cellType, CellOrientation cellOrientation, CellFeature cellFeatures)
     {
+
         int x = GridUtils.GetXPos(index);
         int y = GridUtils.GetYPos(index);
         
