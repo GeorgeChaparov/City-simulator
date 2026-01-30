@@ -1,15 +1,22 @@
 using UnityEngine;
 
+using static UnityEditor.PlayerSettings;
+
 public class GridUtils
 {
-    public static int GetXPos(int _index)
+    public static int GetIndex(int x, int y)
     {
-        return _index % GridGlobals.Width;
+        return y * GridGlobals.Width + x;
     }
 
-    public static int GetYPos(int _index)
+    public static int GetXPos(int index)
     {
-        return (_index % (GridGlobals.Width * GridGlobals.Height)) / GridGlobals.Width;
+        return index % GridGlobals.Width;
+    }
+
+    public static int GetYPos(int index)
+    {
+        return (index % (GridGlobals.Width * GridGlobals.Height)) / GridGlobals.Width;
     }
 
     public static T[] Shuffle<T>(T[] array)
@@ -23,6 +30,31 @@ public class GridUtils
         return array;
     }
 
+    public static (int x, int y) GetCoordinatesDirection(CellOrientation direction)
+    {
+        (int x, int y) coordinates = (0, 0);
+
+        switch (direction)
+        {
+            case CellOrientation.East:
+                coordinates = (1, 0);
+                break;
+            case CellOrientation.West:
+                coordinates = (-1, 0);
+                break;
+            case CellOrientation.North:
+                coordinates = (0, 1);
+                break;
+            case CellOrientation.South:
+                coordinates = (0, -1);
+                break;
+            default:
+                Debug.LogError($"Invalid Direction: {direction}");
+                break;
+        }
+
+        return coordinates;
+    }
 
     public static bool AreDirectionsOpposite(CellOrientation first, CellOrientation second)
     {
@@ -100,46 +132,124 @@ public class GridUtils
 
     public static CellOrientation GetOppositeDirection(CellOrientation direction)
     {
+        CellOrientation oppositeDirection = CellOrientation.None;
         switch (direction)
         {
             case CellOrientation.East:
-                return CellOrientation.West;
+                oppositeDirection = CellOrientation.West;
                 break;
             case CellOrientation.West:
-                return CellOrientation.East;
+                oppositeDirection = CellOrientation.East;
                 break;
             case CellOrientation.North:
-                return CellOrientation.South;
+                oppositeDirection = CellOrientation.South;
                 break;
             case CellOrientation.South:
-                return CellOrientation.North;
+                oppositeDirection = CellOrientation.North;
                 break;
             default:
-                return CellOrientation.None;
+                Debug.LogError($"Invalid Direction: {direction}");
                 break;
         }
+
+        return oppositeDirection;
     }
 
     public static CellOrientation GetOppositeDirectionOf(int index)
     {
         CellOrientation direction = Cell.GetOrientation(index);
+        CellOrientation oppositeDirection = CellOrientation.None;
+
         switch (direction)
         {
             case CellOrientation.East:
-                return CellOrientation.West;
+                oppositeDirection = CellOrientation.West;
                 break;
             case CellOrientation.West:
-                return CellOrientation.East;
+                oppositeDirection = CellOrientation.East;
                 break;
             case CellOrientation.North:
-                return CellOrientation.South;
+                oppositeDirection = CellOrientation.South;
                 break;
             case CellOrientation.South:
-                return CellOrientation.North;
+                oppositeDirection = CellOrientation.North;
                 break;
             default:
-                return CellOrientation.None;
+                Debug.LogError($"Invalid Direction: {direction}");
                 break;
         }
+
+        return oppositeDirection;
+    }
+
+    public static bool IsProjOutOfGridBounds(int index, int fromIndex, CellOrientation direction)
+    {
+        int fromX = GetXPos(fromIndex);
+        int x = GetXPos(index);
+
+        switch (direction)
+        {
+            case CellOrientation.East:
+
+                // If the X pos of the new index is smaller that means we are on the next row and thus on the other side of the grid. 
+                // I consider that invalid. 
+                if (x < fromX)
+                {
+                    return true;
+                }
+                break;
+            case CellOrientation.West:
+
+                // If the X pos of the new index is bigger that means we are on the previous row and thus on the other side of the grid. 
+                // I consider that invalid. 
+                if (x > fromX)
+                {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (index < 0 || index >= GridGlobals.Width * GridGlobals.Height)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsProjOutOfGridBounds(int index, int indexX, int fromIndexX, CellOrientation direction)
+    {
+        switch (direction)
+        {
+            case CellOrientation.East:
+
+                // If the X pos of the new index is smaller that means we are on the next row and thus on the other side of the grid. 
+                // I consider that invalid. 
+                if (indexX < fromIndexX)
+                {
+                    return true;
+                }
+                break;
+            case CellOrientation.West:
+
+                // If the X pos of the new index is bigger that means we are on the previous row and thus on the other side of the grid. 
+                // I consider that invalid. 
+                if (indexX > fromIndexX)
+                {
+                    return true;
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (index < 0 || index >= GridGlobals.Width * GridGlobals.Height)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

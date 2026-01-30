@@ -50,21 +50,26 @@ public static class Cell
 
     static public void Init()
     {
-        int width = GridGlobals.Width;
-        int height = GridGlobals.Height;
-        type = new CellType[width * height];
-        baseTravelCost = new float[width * height];
-        travelCost = new float[width * height];
-        occupants = new List<Agent>[width * height];
+        int length = GridGlobals.Width * GridGlobals.Height;
 
-        for (int i = 0; i < occupants.Length; i++)
+        type = new CellType[length];
+        baseTravelCost = new float[length];
+        travelCost = new float[length];
+        occupants = new List<Agent>[length];
+        traversableBy = new AgentType[length];
+        features = new CellFeature[length];
+        orientation = new CellOrientation[length];
+
+        for (int i = 0; i < length; i++)
         {
+            type[i] = new CellType();
+            baseTravelCost[i] = new float();
+            travelCost[i] = new float();
             occupants[i] = new List<Agent>();
+            traversableBy[i] = new AgentType();
+            features[i] = new CellFeature();
+            orientation[i] = new CellOrientation();
         }
-
-        traversableBy = new AgentType[width * height];
-        features = new CellFeature[width * height];
-        orientation = new CellOrientation[width * height];
     }
 
     static public void PopulateCell(int index, CellType type, int baseTravelCost, CellFeature featuresBitmap, CellOrientation orientation)

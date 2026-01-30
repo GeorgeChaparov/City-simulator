@@ -194,23 +194,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41c653d111076e44fa8db11f3f291dad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: 500
+  gridSize: 20
   cellSize: 30
-  cellsBetweenRoads: 20
-  minStreetsWithoutIntersection: 50
-  maxStreetsWithoutIntersection: 100
+  cellsBetweenRoads: 5
+  minStreetsWithoutIntersection: 10
+  maxStreetsWithoutIntersection: 15
   tIntersectionLikelihood: 0.227
   xIntersectionLikelihood: 0.773
   iStreetLikelihood: 0.85
   lStreetLikelihood: 0.14999998
   maxTurnsBetweenIntersection: 2
-  minStreetsBetweenTurns: 22
-  minStreetsBeforeFirstTurn: 20
-  allowedConsecutiveTurnsInSameOrientation: 2
+  minStreetsBetweenTurns: 2
+  minStreetsBeforeFirstTurn: 2
+  allowedConsecutiveTurnsInSameOrientation: 0
   preventLoopAroundTurns: 1
-  streetsAfterXIntersectionBeforeDeadEnd: 15
-  streetsAfterTIntersectionBeforeDeadEnd: 10
-  IStreetsAfterLStreetsBeforeDeadEnd: 20
+  streetsAfterXIntersectionBeforeDeadEnd: 5
+  streetsAfterTIntersectionBeforeDeadEnd: 5
+  IStreetsAfterLStreetsBeforeDeadEnd: 5
 --- !u!4 &353399498
 Transform:
   m_ObjectHideFlags: 0

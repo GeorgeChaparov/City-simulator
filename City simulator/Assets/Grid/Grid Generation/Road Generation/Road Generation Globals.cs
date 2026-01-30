@@ -44,10 +44,10 @@ public class RoadGenGlobals
     public static int LShapedStreetsCount = 0;
     public static int TotalCellCount = 1;
 
-    public static Queue<int> TIntersectionIndexes = new Queue<int>();
-    public static Queue<int> XIntersectionIndexes = new Queue<int>();
-    public static Queue<int> TurnIndexes = new Queue<int>();
-    public static Queue<int> DeadEndIndexes = new Queue<int>();
+    public static List<int> TIntersectionIndexes = new List<int>();
+    public static List<int> XIntersectionIndexes = new List<int>();
+    public static List<int> TurnIndexes = new List<int>();
+    public static List<int> DeadEndIndexes = new List<int>();
 
     public static int StreetsAfterXIntersectionBeforeDeadEnd = 10;
     public static int StreetsAfterTIntersectionBeforeDeadEnd = 10;

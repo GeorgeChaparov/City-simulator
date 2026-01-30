@@ -34,7 +34,7 @@ public class RoadGenerator
         // Adding the first intersection on a random position in the grid.
         Cell.PopulateCell(randomsStartIndex, CellType.Intersection, 2, CellFeature.XShapedIntersection, CellOrientation.East);
         GridGlobals.StreetAdjacencyList.Add(randomsStartIndex, new List<int>());
-        RoadGenGlobals.XIntersectionIndexes.Enqueue(randomsStartIndex);
+        RoadGenGlobals.XIntersectionIndexes.Add(randomsStartIndex);
 
         populatedToCheck.Push(randomsStartIndex);
 
@@ -58,7 +58,7 @@ public class RoadGenerator
             // If, we have hit the end of the grid.
             if (indexes[0] == RoadGenGlobals.HIT_END_OF_GRID)
             {
-                SetDeadEnd(lastCellIndex, Cell.GetOrientation(lastCellIndex));
+                SetDeadEnd(lastCellProps.index, lastCellProps.orientation);
                 continue;
             }
             // If there are no possible directions that means that the current cell is Dead end street.
@@ -148,39 +148,19 @@ public class RoadGenerator
         // For each valid direction
         for (int i = 0; i < directions.Count; i++)
         {
+
+            
             CellOrientation direction = directions[i];
             int newX = lastCellProps.x;
             int newY = lastCellProps.y;
-            int pos = lastCellProps.index;
-
-            bool isOutOfBounds = false;
 
             switch (direction)
             {
                 case CellOrientation.East:
                     newX++;
-                    // Calculate the position in the grid.
-                    pos = newY * GridGlobals.Width + newX;
-
-                    // If the X pos of the new index is smaller that means we are on the next row and thus on the other side of the grid. 
-                    // I consider that invalid. 
-                    if (GridUtils.GetXPos(pos) < lastCellProps.x)
-                    {
-                        isOutOfBounds = true;
-                    }
                     break;
                 case CellOrientation.West:
                     newX--;
-
-                    // Calculate the position in the grid.
-                    pos = newY * GridGlobals.Width + newX;
-
-                    // If the X pos of the new index is bigger that means we are on the previous row and thus on the other side of the grid. 
-                    // I consider that invalid. 
-                    if (GridUtils.GetXPos(pos) > lastCellProps.x)
-                    {
-                        isOutOfBounds = true;
-                    }
                     break;
                 case CellOrientation.North:
                     newY++;
@@ -193,16 +173,9 @@ public class RoadGenerator
                     break;
             }
 
-            // If we have not calculated the the new pos yet.
-            if (pos == lastCellProps.index)
-            {
-                pos = newY * GridGlobals.Width + newX;
-            }
+            int pos = GridUtils.GetIndex(newX, newY);
 
-            if (pos < 0 || pos >= GridGlobals.Width * GridGlobals.Height)
-            {
-                isOutOfBounds = true;
-            }
+            bool isOutOfBounds = GridUtils.IsProjOutOfGridBounds(pos, lastCellProps.index, direction);
 
             // If this direction is out of the grid.
             if (isOutOfBounds)
@@ -408,7 +381,7 @@ public class RoadGenerator
                 lastTurnIndex = streetsWithoutIntersectionCount;
                 turnsBetweenIntersectionCount++;
                 RoadGenGlobals.LShapedStreetsCount++;
-                RoadGenGlobals.TurnIndexes.Enqueue(currentCellIndex);
+                RoadGenGlobals.TurnIndexes.Add(currentCellIndex);
 
                 if (RoadGenGlobals.PreventLoopAroundTurns)
                 {
@@ -431,14 +404,14 @@ public class RoadGenerator
                 // the first cell of each possible way is created and then it continues from the last created cell.
                 // Because of this, between creating the intersection and the next intersection, there will be created one additional cell.
                 streetsWithoutIntersectionCount = -1;
-                RoadGenGlobals.TIntersectionIndexes.Enqueue(currentCellIndex);
+                RoadGenGlobals.TIntersectionIndexes.Add(currentCellIndex);
                 break;
             case CellFeature.XShapedIntersection:
                 // Setting this to minus two because when creating an X shaped intersection,
                 // the first cell of each possible way is created and then it continues from the last created cell.
                 // Because of this, between creating the intersection and the next intersection, there will be created two additional cells.
                 streetsWithoutIntersectionCount = -2;
-                RoadGenGlobals.XIntersectionIndexes.Enqueue(currentCellIndex);
+                RoadGenGlobals.XIntersectionIndexes.Add(currentCellIndex);
                 break;
             default:
                 break;
@@ -753,8 +726,8 @@ public class RoadGenerator
                 for (int i = 0; i < mask.Length; i++)
                 {
                     (int x, int y) offset = mask[i];
-
-                    int index = ((y + offset.y) * GridGlobals.Width + (x + offset.x));
+                    
+                    int index = GridUtils.GetIndex((x + offset.x), (y + offset.y));
 
                     if (GridGlobals.StreetAdjacencyList.ContainsKey(index))
                     {
@@ -855,7 +828,7 @@ public class RoadGenerator
         CellOrientation orientation = GridUtils.GetOppositeDirection(dirFromLastCell);
 
 
-        RoadGenGlobals.DeadEndIndexes.Enqueue(index);
+        RoadGenGlobals.DeadEndIndexes.Add(index);
         Cell.PopulateCell(index, CellType.Street, 2, CellFeature.DeadEnd, orientation);
     }
 

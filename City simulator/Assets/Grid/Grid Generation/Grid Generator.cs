@@ -17,8 +17,8 @@ public class GridGenerator
         RoadGenGlobals.MinStreetsBeforeFirstTurn = minStreetsAfterIntersectionBeforeTurn;
         RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd = streetsAfterXIntersectionBeforeDeadEnd;
         RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd = streetsAfterTIntersectionBeforeDeadEnd;
-        RoadGenGlobals.TIntersectionIndexes = new Queue<int>();
-        RoadGenGlobals.XIntersectionIndexes = new Queue<int>();
+        RoadGenGlobals.TIntersectionIndexes = new List<int>();
+        RoadGenGlobals.XIntersectionIndexes = new List<int>();
 
         // Street related.
         RoadGenGlobals.AllowedConsecutiveTurnsInSameOrientation = allowedConsecutiveTurnsInSameOrientation;
@@ -26,8 +26,8 @@ public class GridGenerator
         RoadGenGlobals.PreventLoopAroundTurns = preventLoopAroundTurns;
         RoadGenGlobals.IStreetLikelihood = iStreetLikelihood;
         RoadGenGlobals.IStreetsAfterLStreetsBeforeDeadEnd = iStreetsAfterLStreetsBeforeDeadEnd;
-        RoadGenGlobals.TurnIndexes = new Queue<int>();
-        RoadGenGlobals.DeadEndIndexes = new Queue<int>();
+        RoadGenGlobals.TurnIndexes = new List<int>();
+        RoadGenGlobals.DeadEndIndexes = new List<int>();
 
         // Counters
         RoadGenGlobals.IShapedStreetsCount = 0;
@@ -73,7 +73,7 @@ public class GridGenerator
     {
         int x = UnityEngine.Random.Range(0, GridGlobals.Width);
         int y = UnityEngine.Random.Range(0, GridGlobals.Height);
-        int randomStartIndex = y * GridGlobals.Width + x;
+        int randomStartIndex = GridUtils.GetIndex(x, y);
 
         // Generate the Road
         yield return RoadGenerator.Generate(randomStartIndex);
