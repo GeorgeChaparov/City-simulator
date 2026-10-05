@@ -191,6 +191,8 @@ public class RoadReconstructor
 
                 List<int> neighbors = GridGlobals.StreetAdjacencyList[currNeighbor];
 
+                
+
                 foreach (var nextNeighbor in neighbors)
                 {
 
@@ -200,7 +202,6 @@ public class RoadReconstructor
                     }
 
                     CellFeature neighborFeature = Cell.GetFeatures(nextNeighbor);
-
                     if ((neighborFeature & CellFeature.LShapedStreet) != 0 ||
                         (neighborFeature & CellFeature.TShapedIntersection) != 0 ||
                         (neighborFeature & CellFeature.XShapedIntersection) != 0)
@@ -209,7 +210,10 @@ public class RoadReconstructor
                     }
                     else
                     {
-                        return CheckIDistFromTurnOrIntersections(nextNeighbor, currNeighbor, ++neighborIterations);
+                        if (CheckIDistFromTurnOrIntersections(nextNeighbor, currNeighbor, ++neighborIterations))
+                        {
+                            return true;
+                        }
                     }
                 }
 
