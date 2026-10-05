@@ -380,7 +380,7 @@ public class RoadGenerator
             // If we have exceeded the minimum allowed street count without an intersection, we decide randomly if we will try to create one or not.
             else if (streetsWithoutIntersectionCount >= RoadGenGlobals.MinStreetsWithoutIntersection)
             {
-                switch (Random.Range(0, 2))
+                switch (RoadGenGlobals.RandomInstance.Next(0, 2))
                 {
                     case 0:
                         // If there are no more possible streets, we try to create an intersection.
@@ -478,7 +478,7 @@ public class RoadGenerator
             // Helper function that chose feature based on random value and if the chosen one is not possible, it tries with the other.
             void tryFeatures(CellFeature possibleFeatures, CellFeature first, CellFeature second, float firstChance)
             {
-                if (Random.value <= firstChance)
+                if (RoadGenGlobals.RandomInstance.NextDouble() <= firstChance)
                 {
                     // If the first feature is possible.
                     if ((possibleFeatures & first) != 0)
@@ -530,7 +530,7 @@ public class RoadGenerator
                     CellOrientation second = directions[1];
 
                     // Try first direction.
-                    if (Random.Range(0, 2) == 0)
+                    if (RoadGenGlobals.RandomInstance.Next(0, 2) == 0)
                     {
                         // If the space around the first direction is free.
                         if (GridUtils.CheckForSpace(first, dirFromLastCell, newCellFeatures, currentCellIndex))
@@ -574,7 +574,7 @@ public class RoadGenerator
                         if (i != 0)
                         {
                             // Get a random number between 0 and the number of options.
-                            randomRotation = Random.Range(0, i);
+                            randomRotation = RoadGenGlobals.RandomInstance.Next(0, i);
                         }
 
                         // Get the orientation.

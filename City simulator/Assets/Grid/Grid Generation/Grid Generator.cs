@@ -10,6 +10,13 @@ public class GridGenerator
         int streetsAfterTIntersectionBeforeDeadEnd, int streetsAfterLStreetsBeforeDeadEnd, int connectionRange, bool connectToIShapedStreets,
         int iShapedStreetConnectionRange, int iDistanceFromTurnOrIntersection) 
     {
+
+        int seed = GameManager.Instance.seed;
+        if (seed != -1)
+        {
+            RoadGenGlobals.RandomInstance = new System.Random(seed);
+        }
+
         //                  Generation
         //
         // Intersection related.
@@ -80,8 +87,8 @@ public class GridGenerator
 
     public static IEnumerator Generate()
     {
-        int x = UnityEngine.Random.Range(0, GridGlobals.Width);
-        int y = UnityEngine.Random.Range(0, GridGlobals.Height);
+        int x = RoadGenGlobals.RandomInstance.Next(0, GridGlobals.Width);
+        int y = RoadGenGlobals.RandomInstance.Next(0, GridGlobals.Height);
         int randomStartIndex = GridUtils.GetIndex(x, y);
 
         // Generate the Road

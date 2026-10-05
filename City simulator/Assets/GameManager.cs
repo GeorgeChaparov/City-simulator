@@ -5,6 +5,8 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    public int seed = -1;
+
     public int counter = 0;
 
     public bool Continue = false;

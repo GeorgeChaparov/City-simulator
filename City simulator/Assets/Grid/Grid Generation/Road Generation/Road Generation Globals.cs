@@ -6,6 +6,7 @@ public class RoadGenGlobals
     public static readonly int NO_POSSIBLE_DIRECTIONS = -101;
 
 
+    public static System.Random RandomInstance = new System.Random();
     public static int MinStreetsWithoutIntersection = 10;
     public static int MaxStreetsWithoutIntersection = 20;
 
