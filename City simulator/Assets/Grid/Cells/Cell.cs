@@ -27,6 +27,9 @@ public enum CellFeature
     Bench = 1 << 10, Trees = 1 << 11,
 }
 
+/// <summary>
+/// Class that holds flat arrays with the props of each cell in the gird.
+/// </summary>
 public static class Cell
 {
     /// <summary> This is the cost that is given when populating the cell. It is used to calculate the real travel cost. </summary>
@@ -72,6 +75,9 @@ public static class Cell
         }
     }
 
+    /// <summary>
+    /// Populate the cell on the given index with the given values
+    /// </summary>
     static public void PopulateCell(int index, CellType type, int baseTravelCost, CellFeature featuresBitmap, CellOrientation orientation)
     {
         Cell.type[index] = type;
@@ -83,6 +89,10 @@ public static class Cell
         CalculateTraversability(index);
     }
 
+    /// <summary>
+    /// Sets all of the props of the cell on the given index to the default value.
+    /// </summary>
+    /// <param name="index"></param>
     static public void ClearCell(int index)
     {
         type[index] = new CellType();
@@ -94,6 +104,9 @@ public static class Cell
         orientation[index] = new CellOrientation();
     }
 
+    /// <summary>
+    /// Changes the values of the props, of the cell with the given index, with the given values.
+    /// </summary>
     static public void UpdateCell(int index, CellType type, int baseTravelCost, CellFeature featuresBitmap, CellOrientation orientation)
     {
         Cell.type[index] = type;
@@ -105,6 +118,11 @@ public static class Cell
         CalculateTraversability(index);
     }
 
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns>The feature bitmap of the cell with the given index.</returns>
     public static CellFeature GetFeatures(int index)
     {
         return features[index];
@@ -134,6 +152,11 @@ public static class Cell
         CalculateTraversability(index);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns>The type of the cell with the given index.</returns>
     public static CellType GetType(int index)
     {
         return type[index];
@@ -148,6 +171,11 @@ public static class Cell
         CalculateTraversability(index);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns>The list of occupants of the cell with the given index.</returns>
     public static List<Agent> GetOccupants(int index)
     {
         return occupants[index];
@@ -163,6 +191,11 @@ public static class Cell
         occupants[index].Remove(occupant);
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns>The traverse cost of the cell with the given index.</returns>
     public static float GetTravelCost(int index)
     {
         return travelCost[index];
@@ -173,6 +206,11 @@ public static class Cell
         return traversableBy[index];
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="index"></param>
+    /// <returns>The orientation of the cell with the given index.</returns>
     public static CellOrientation GetOrientation(int index)
     {
         return orientation[index];

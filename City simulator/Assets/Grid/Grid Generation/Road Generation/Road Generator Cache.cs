@@ -8,9 +8,52 @@ public class RoadGenCache
     public static readonly int IntersectionTraverseBaseCost = 5;
 
     /// <summary>
+    /// Holds the sides that can have another road attached to them for I shaped street.
+    /// </summary>
+    public static readonly Dictionary<CellOrientation, CellOrientation> IPossibleNeighborSides = new Dictionary<CellOrientation, CellOrientation>(4)
+    {
+        { CellOrientation.East , CellOrientation.East | CellOrientation.West },     // 0 - If oriented to the east
+        { CellOrientation.West , CellOrientation.East | CellOrientation.West },     // 1 - If oriented to the west
+        { CellOrientation.North , CellOrientation.North | CellOrientation.South },  // 2 - If oriented to the north
+        { CellOrientation.South , CellOrientation.North | CellOrientation.South },  // 3 - If oriented to the south
+    };
+
+    /// <summary>
+    /// Holds the sides that can have another road attached to them for L shaped street.
+    /// </summary>
+    public static readonly Dictionary<CellOrientation, CellOrientation> LPossibleNeighborSides = new Dictionary<CellOrientation, CellOrientation>(4)
+    {
+        { CellOrientation.East , CellOrientation.East | CellOrientation.North },   // 0 - If oriented to the east
+        { CellOrientation.West , CellOrientation.West | CellOrientation.South },   // 1 - If oriented to the west
+        { CellOrientation.North , CellOrientation.North | CellOrientation.West },  // 2 - If oriented to the north
+        { CellOrientation.South , CellOrientation.South | CellOrientation.East },  // 3 - If oriented to the south
+    };
+
+    /// <summary>
+    /// Holds the sides that can have another road attached to them for T shaped intersection.
+    /// </summary>
+    public static readonly Dictionary<CellOrientation, CellOrientation> TPossibleNeighborSides = new Dictionary<CellOrientation, CellOrientation>(4)
+    {
+        { CellOrientation.East , CellOrientation.East | CellOrientation.North | CellOrientation.South },  // 0 - If oriented to the east
+        { CellOrientation.West , CellOrientation.West | CellOrientation.North | CellOrientation.South },  // 1 - If oriented to the west
+        { CellOrientation.North , CellOrientation.North | CellOrientation.East | CellOrientation.West },  // 2 - If oriented to the north
+        { CellOrientation.South , CellOrientation.South | CellOrientation.East | CellOrientation.West },  // 3 - If oriented to the south
+    };
+
+    /// <summary>
+    /// Holds the sides that can have another road attached to them for X shaped intersection.
+    /// </summary>
+    public static readonly Dictionary<CellOrientation, CellOrientation> XPossibleNeighborSides = new Dictionary<CellOrientation, CellOrientation>(4)
+    {
+        { CellOrientation.East , CellOrientation.East | CellOrientation.West | CellOrientation.North | CellOrientation.South },   // 0 - If oriented to the east
+        { CellOrientation.West , CellOrientation.East | CellOrientation.West | CellOrientation.North | CellOrientation.South },   // 1 - If oriented to the west
+        { CellOrientation.North , CellOrientation.East | CellOrientation.West | CellOrientation.North | CellOrientation.South },  // 2 - If oriented to the north
+        { CellOrientation.South , CellOrientation.East | CellOrientation.West | CellOrientation.North | CellOrientation.South },  // 3 - If oriented to the south
+    };
+
+    /// <summary>
     /// Holds possible orientations for the T shaped intersection based on which side of the last cell it is.
     /// </summary>
-    /// 
     public static readonly Dictionary<CellOrientation, CellOrientation[]> TOrientationBasedOnLastCellMask = new Dictionary<CellOrientation, CellOrientation[]>(4)
     {
         { CellOrientation.East , new[] { CellOrientation.West,  CellOrientation.North, CellOrientation.South } }, // 0 - If on the east side of the last cell
@@ -56,6 +99,13 @@ public class RoadGenCache
 
     // Masks for each type of road used to create the masks used during simulation for collision detection.
     #region Base collistion detection masks
+
+    public static readonly (int x, int y)[] IBaseReconstructionMaskOffsets = new (int, int)[]
+    {
+                                         (0, 1),
+        /*I shaped street facing east -> (0, 0)*/
+                                         (0, -1),
+    };
 
     public static readonly (int x, int y)[] IBaseMaskOffsets = new (int, int)[]
     {

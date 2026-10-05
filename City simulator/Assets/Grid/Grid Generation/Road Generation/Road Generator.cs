@@ -106,8 +106,8 @@ public class RoadGenerator
 
     private static void CalculateNextPositions(out List<int> positions, out List<CellOrientation> directions)
     {
-        directions = new List<CellOrientation>();
-        positions = new List<int>();
+        directions = new List<CellOrientation>(4);
+        positions = new List<int>(4);
 
         // Get all of the possible direction for the given type of cell
         CellOrientation allowedDirections = CalculateAllowedDirections();
@@ -148,7 +148,6 @@ public class RoadGenerator
         // For each valid direction
         for (int i = 0; i < directions.Count; i++)
         {
-
             
             CellOrientation direction = directions[i];
             int newX = lastCellProps.x;
@@ -203,84 +202,29 @@ public class RoadGenerator
         }
     }
 
+
+    /// <returns>The sides of the last cell that can have neighbors based on its rotation.</returns>
     private static CellOrientation CalculateAllowedDirections()
     {
         CellOrientation directions = CellOrientation.None;
 
-        switch (lastCellProps.type)
+        if ((lastCellProps.features & CellFeature.IShapedStreet) != 0)
         {
-            case CellType.Empty:
-                break;
-            case CellType.Building:
-                break;
-            case CellType.Sidewalk:
-                break;
-            case CellType.Street:
-                if ((lastCellProps.features & CellFeature.IShapedStreet) != 0)
-                {
-                    if (lastCellProps.orientation == CellOrientation.East || lastCellProps.orientation == CellOrientation.West)
-                    {
-                        directions = CellOrientation.East | CellOrientation.West;
-                    }
-                    else
-                    {
-                        directions = CellOrientation.North | CellOrientation.South;
-                    }
-                }
-                else if ((lastCellProps.features & CellFeature.LShapedStreet) != 0)
-                {
-                    switch (lastCellProps.orientation)
-                    {
-                        case CellOrientation.East:
-                            directions = CellOrientation.East | CellOrientation.North;
-                            break;
-                        case CellOrientation.West:
-                            directions = CellOrientation.West | CellOrientation.South;
-                            break;
-                        case CellOrientation.North:
-                            directions = CellOrientation.North | CellOrientation.West;
-                            break;
-                        case CellOrientation.South:
-                            directions = CellOrientation.South | CellOrientation.East;
-                            break;
-                        default:
-                            Debug.LogError("Cell Orientation is something other then East, West, North or South");
-                            break;
-                    }
-                }
-                break;
-            case CellType.Intersection:
-                if ((lastCellProps.features & CellFeature.TShapedIntersection) != 0)
-                {
-                    switch (lastCellProps.orientation)
-                    {
-                        case CellOrientation.East:
-                            directions = CellOrientation.East | CellOrientation.North | CellOrientation.South;
-                            break;
-                        case CellOrientation.West:
-                            directions = CellOrientation.West | CellOrientation.North | CellOrientation.South;
-                            break;
-                        case CellOrientation.North:
-                            directions = CellOrientation.North | CellOrientation.East | CellOrientation.West;
-                            break;
-                        case CellOrientation.South:
-                            directions = CellOrientation.South | CellOrientation.East | CellOrientation.West;
-                            break;
-                        default:
-                            Debug.LogError("Cell Orientation is something other then East, West, North or South");
-                            break;
-                    }
-                }
-                else if ((lastCellProps.features & CellFeature.XShapedIntersection) != 0)
-                {
-                    directions = CellOrientation.East | CellOrientation.West | CellOrientation.North | CellOrientation.South;
-                }
-                break;
-            default:
-                Debug.LogError("This cell type is unsupported.");
-                break;
+            directions = RoadGenCache.IPossibleNeighborSides[lastCellProps.orientation];
         }
-
+        else if ((lastCellProps.features & CellFeature.LShapedStreet) != 0)
+        {
+            directions = RoadGenCache.LPossibleNeighborSides[lastCellProps.orientation];
+        }
+        else if ((lastCellProps.features & CellFeature.TShapedIntersection) != 0)
+        {
+            directions = RoadGenCache.TPossibleNeighborSides[lastCellProps.orientation];
+        }
+        else if ((lastCellProps.features & CellFeature.XShapedIntersection) != 0)
+        {
+            directions = RoadGenCache.XPossibleNeighborSides[lastCellProps.orientation];
+        }
+        
         return directions;
     }
 
@@ -375,13 +319,12 @@ public class RoadGenerator
         switch (newCellFeatures)
         {
             case CellFeature.IShapedStreet:
-                RoadGenGlobals.IShapedStreetsCount++;
+                RoadGenGlobals.IShapedStreetIndexes.Add(currentCellIndex);
                 break;
             case CellFeature.LShapedStreet:
                 lastTurnIndex = streetsWithoutIntersectionCount;
                 turnsBetweenIntersectionCount++;
-                RoadGenGlobals.LShapedStreetsCount++;
-                RoadGenGlobals.TurnIndexes.Add(currentCellIndex);
+                RoadGenGlobals.LShapedStreetIndexes.Add(currentCellIndex);
 
                 if (RoadGenGlobals.PreventLoopAroundTurns)
                 {
@@ -480,7 +423,7 @@ public class RoadGenerator
             // Intersections are not possible because of one of the rules.
             else
             {
-                // So we remove all intersections from the list with possible intersections.
+                // So we remove all intersections from the flag with possible intersections.
                 possibleIntersections = CellFeature.None;
 
                 if (possibleStreets == CellFeature.None)
@@ -570,7 +513,7 @@ public class RoadGenerator
                 case CellFeature.IShapedStreet:
 
                     // Check if we can place it there with that orientation.
-                    if (!checkForSpace(dirFromLastCell))
+                    if (!GridUtils.CheckForSpace(dirFromLastCell, dirFromLastCell, newCellFeatures, currentCellIndex))
                     {
                         possibleStreets ^= CellFeature.IShapedStreet;
                         break;
@@ -590,26 +533,26 @@ public class RoadGenerator
                     if (Random.Range(0, 2) == 0)
                     {
                         // If the space around the first direction is free.
-                        if (checkForSpace(first))
+                        if (GridUtils.CheckForSpace(first, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             checkLOrientationRulesFor(first, second);
                         }
                         // If the space around the second direction is free
-                        else if (checkForSpace(second))
+                        else if (GridUtils.CheckForSpace(second, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             checkLOrientationRulesFor(second, first);
                         }
                     }
-                    // Try east
+                    // Try second direction.
                     else
                     {
                         // If the space around the second direction is free
-                        if (checkForSpace(second))
+                        if (GridUtils.CheckForSpace(second, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             checkLOrientationRulesFor(second, first);
                         }
                         // If the space around the first direction is free
-                        else if (checkForSpace(first))
+                        else if (GridUtils.CheckForSpace(first, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             checkLOrientationRulesFor(first, second);
                         }
@@ -638,7 +581,7 @@ public class RoadGenerator
                         var orientation = orders[randomRotation];
 
                         // Check if we can place it there with that orientation.
-                        if (checkForSpace(orientation))
+                        if (GridUtils.CheckForSpace(orientation, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             newCellOrientation = orientation;
 
@@ -661,8 +604,7 @@ public class RoadGenerator
                     break;
                 case CellFeature.XShapedIntersection:
 
-
-                    if (!checkForSpace(dirFromLastCell))
+                    if (!GridUtils.CheckForSpace(dirFromLastCell, dirFromLastCell, newCellFeatures, currentCellIndex))
                     {
                         possibleIntersections ^= CellFeature.XShapedIntersection;
                         break;
@@ -700,7 +642,7 @@ public class RoadGenerator
                         first == RoadGenCache.LDeniedConsecutiveOrientations[i][2])
                     {
                         // And the second option is possible
-                        if (checkForSpace(second))
+                        if (GridUtils.CheckForSpace(second, dirFromLastCell, newCellFeatures, currentCellIndex))
                         {
                             newCellOrientation = second;
                         }
@@ -710,102 +652,6 @@ public class RoadGenerator
                 }
 
                 newCellOrientation = first;
-            }
-
-            bool checkForSpace(CellOrientation direction)
-            {
-                (int x, int y)[] mask = GetRotatedMask(direction);
-
-                int x = GridUtils.GetXPos(currentCellIndex);
-                int y = GridUtils.GetYPos(currentCellIndex);
-
-                // Used for visualizing the check bounds.
-                GridGlobals.CheckBounds = (currentCellIndex, mask);
-
-                // For each position, check if there is a street.
-                for (int i = 0; i < mask.Length; i++)
-                {
-                    (int x, int y) offset = mask[i];
-                    
-                    int index = GridUtils.GetIndex((x + offset.x), (y + offset.y));
-
-                    if (GridGlobals.StreetAdjacencyList.ContainsKey(index))
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            (int x, int y)[] GetRotatedMask(CellOrientation direction)
-            {
-                (int x, int y)[] mask = new (int, int)[0];
-
-                switch (newCellFeatures)
-                {
-                    case CellFeature.IShapedStreet:
-                        mask = RotateOffsets(RoadGenGlobals.IMaskOffsets, direction);
-                        break;
-                    case CellFeature.LShapedStreet:
-                        if (GridUtils.AreDirectionsOpposite(direction, dirFromLastCell))
-                        {
-                            mask = RotateOffsets(RoadGenGlobals.LForwardMaskOffsets, direction);
-                        }
-                        else
-                        {
-                            mask = RotateOffsets(RoadGenGlobals.LBackwardMaskOffsets, direction);
-                        }
-                        break;
-                    case CellFeature.TShapedIntersection:
-                        if (GridUtils.AreDirectionsOpposite(direction, dirFromLastCell))
-                        {
-                            mask = RotateOffsets(RoadGenGlobals.TForwardMaskOffsets, direction);
-                        }
-                        else
-                        {
-                            if (dirFromLastCell == CellOrientation.West && direction == CellOrientation.South)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.West && direction == CellOrientation.North)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.East && direction == CellOrientation.South)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.East && direction == CellOrientation.North)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.South && direction == CellOrientation.East)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.South && direction == CellOrientation.West)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.North && direction == CellOrientation.East)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
-                            }
-                            else if (dirFromLastCell == CellOrientation.North && direction == CellOrientation.West)
-                            {
-                                mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
-                            }
-                        }
-                        break;
-                    case CellFeature.XShapedIntersection:
-                        mask = RotateOffsets(RoadGenGlobals.XMaskOffsets, direction);
-                        break;
-                    default:
-                        break;
-                }
-
-                return mask;
             }
         }
     }
@@ -830,35 +676,5 @@ public class RoadGenerator
 
         RoadGenGlobals.DeadEndIndexes.Add(index);
         Cell.PopulateCell(index, CellType.Street, 2, CellFeature.DeadEnd, orientation);
-    }
-
-    static (int x, int y)[] RotateOffsets((int x, int y)[] offsets, CellOrientation orientation)
-    {
-        // Rotate 90 degrees clockwise per orientation
-        (int x, int y)[] rotated = new (int, int)[offsets.Length];
-        for (int i = 0; i < offsets.Length; i++)
-        {
-            int x = offsets[i].x;
-            int y = offsets[i].y;
-
-            switch (orientation)
-            {
-                case CellOrientation.East:
-                    rotated[i] = (x, y);
-                    break;
-                case CellOrientation.West:
-                    rotated[i] = (-x, -y);
-                    break;
-                case CellOrientation.North:
-                    rotated[i] = (-y, x);
-                    break;
-                case CellOrientation.South:
-                    rotated[i] = (y, -x);
-                    break;
-                default:
-                    break;
-            }
-        }
-        return rotated;
     }
 }

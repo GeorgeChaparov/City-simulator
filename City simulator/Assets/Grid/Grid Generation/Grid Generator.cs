@@ -7,16 +7,17 @@ public class GridGenerator
     public static void Init(int minStreetsWithoutIntersection, int maxStreetsWithoutIntersection, int maxTurnsBetweenIntersection,
         int minStreetsBetweenTurns, int minStreetsAfterIntersectionBeforeTurn, int emptyCellsBetweenStreets, int allowedConsecutiveTurnsInSameOrientation,
         float xIntersectionLikelihood, bool preventLoopAroundTurns, float iStreetLikelihood, int streetsAfterXIntersectionBeforeDeadEnd,
-            int streetsAfterTIntersectionBeforeDeadEnd, int iStreetsAfterLStreetsBeforeDeadEnd) 
+        int streetsAfterTIntersectionBeforeDeadEnd, int streetsAfterLStreetsBeforeDeadEnd, int connectionRange, bool connectToIShapedStreets,
+        int iShapedStreetConnectionRange, int iDistanceFromTurnOrIntersection) 
     {
+        //                  Generation
+        //
         // Intersection related.
         RoadGenGlobals.MinStreetsWithoutIntersection = minStreetsWithoutIntersection;
         RoadGenGlobals.MaxStreetsWithoutIntersection = maxStreetsWithoutIntersection;
         RoadGenGlobals.MaxTurnsBetweenIntersection = maxTurnsBetweenIntersection;
         RoadGenGlobals.MinStreetsBetweenTurns = minStreetsBetweenTurns;
         RoadGenGlobals.MinStreetsBeforeFirstTurn = minStreetsAfterIntersectionBeforeTurn;
-        RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd = streetsAfterXIntersectionBeforeDeadEnd;
-        RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd = streetsAfterTIntersectionBeforeDeadEnd;
         RoadGenGlobals.TIntersectionIndexes = new List<int>();
         RoadGenGlobals.XIntersectionIndexes = new List<int>();
 
@@ -25,13 +26,20 @@ public class GridGenerator
         RoadGenGlobals.XIntersectionLikelihood = xIntersectionLikelihood;
         RoadGenGlobals.PreventLoopAroundTurns = preventLoopAroundTurns;
         RoadGenGlobals.IStreetLikelihood = iStreetLikelihood;
-        RoadGenGlobals.IStreetsAfterLStreetsBeforeDeadEnd = iStreetsAfterLStreetsBeforeDeadEnd;
-        RoadGenGlobals.TurnIndexes = new List<int>();
+        RoadGenGlobals.LShapedStreetIndexes = new List<int>();
         RoadGenGlobals.DeadEndIndexes = new List<int>();
 
-        // Counters
-        RoadGenGlobals.IShapedStreetsCount = 0;
-        RoadGenGlobals.LShapedStreetsCount = 0;
+        //                  Reconstruction
+        //
+        RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd = streetsAfterXIntersectionBeforeDeadEnd;
+        RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd = streetsAfterTIntersectionBeforeDeadEnd;
+        RoadGenGlobals.StreetsAfterLStreetsBeforeDeadEnd = streetsAfterLStreetsBeforeDeadEnd;
+        RoadGenGlobals.ConnectionRange = connectionRange;
+        RoadGenGlobals.ConnectToIShapedStreets = connectToIShapedStreets;
+        RoadGenGlobals.IShapedStreetConnectionRange = iShapedStreetConnectionRange;
+        RoadGenGlobals.IDistanceFromTurnOrIntersection = iDistanceFromTurnOrIntersection;
+
+        //                  Counters
         RoadGenGlobals.TotalCellCount = 1;
         RoadGenGlobals.StepCounter = 0;
 
@@ -46,6 +54,7 @@ public class GridGenerator
                 bool verticalUpCheck((int x, int y) offset) { return offset.x != 0 || offset.y < 0; };
                 bool verticalDownCheck((int x, int y) offset) { return offset.x != 0 || offset.y > 0; };
 
+                RoadGenGlobals.IReconstructionMaskOffsets = GenerateMaskOffset(RoadGenCache.IBaseReconstructionMaskOffsets, horizontalRightCheck);
                 RoadGenGlobals.IMaskOffsets = GenerateMaskOffset(RoadGenCache.IBaseMaskOffsets, horizontalRightCheck);
                 RoadGenGlobals.LForwardMaskOffsets = GenerateMaskOffset(RoadGenCache.LBaseForwardMaskOffsets, horizontalLeftCheck);
                 RoadGenGlobals.TForwardMaskOffsets = GenerateMaskOffset(RoadGenCache.TBaseForwardMaskOffsets, horizontalLeftCheck);
@@ -85,9 +94,9 @@ public class GridGenerator
         // Fix any mistakes made during generation (make the road look prettier).
         yield return RoadReconstructor.Reconstruct();
 
-        Debug.Log($"I shaped: {RoadGenGlobals.TotalCellCount}");
-        Debug.Log($"I shaped: {RoadGenGlobals.IShapedStreetsCount}");
-        Debug.Log($"L shaped: {RoadGenGlobals.LShapedStreetsCount}");
+        Debug.Log($"All: {RoadGenGlobals.TotalCellCount}");
+        Debug.Log($"I shaped: {RoadGenGlobals.IShapedStreetIndexes.Count}");
+        Debug.Log($"L shaped: {RoadGenGlobals.LShapedStreetIndexes.Count}");
     }
 
     private static (int x, int y)[] GenerateMaskOffset((int x, int y)[] offsets, Func<(int x, int y), bool> addCondition, bool horizontal = true)

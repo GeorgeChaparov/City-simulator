@@ -252,4 +252,115 @@ public class GridUtils
 
         return false;
     }
+
+    public static bool CheckForSpace(CellOrientation direction, CellOrientation dirFromLastCell, CellFeature features, int index, bool reconstructing = false)
+    {
+
+        (int x, int y)[] mask = reconstructing ? 
+            RotateOffsets(RoadGenGlobals.IReconstructionMaskOffsets, direction) : 
+            GetRotatedMask(direction, dirFromLastCell, features);
+
+        int x = GetXPos(index);
+        int y = GetYPos(index);
+
+        // Used for visualizing the check bounds.
+        GridGlobals.CheckBounds = (index, mask);
+
+        // For each position, check if there is a street.
+        for (int i = 0; i < mask.Length; i++)
+        {
+            (int x, int y) offset = mask[i];
+
+            int offsetIndex = GetIndex(x + offset.x, y + offset.y);
+
+            if (GridGlobals.StreetAdjacencyList.ContainsKey(offsetIndex))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static (int x, int y)[] GetRotatedMask(CellOrientation direction, CellOrientation dirFromLastCell, CellFeature features)
+    {
+        (int x, int y)[] mask = new (int, int)[0];
+
+        switch (features)
+        {
+            case CellFeature.IShapedStreet:
+                mask = RotateOffsets(RoadGenGlobals.IMaskOffsets, direction);
+                break;
+            case CellFeature.LShapedStreet:
+                if (GridUtils.AreDirectionsOpposite(direction, dirFromLastCell))
+                {
+                    mask = RotateOffsets(RoadGenGlobals.LForwardMaskOffsets, direction);
+                }
+                else
+                {
+                    mask = RotateOffsets(RoadGenGlobals.LBackwardMaskOffsets, direction);
+                }
+                break;
+            case CellFeature.TShapedIntersection:
+                if (GridUtils.AreDirectionsOpposite(direction, dirFromLastCell))
+                {
+                    mask = RotateOffsets(RoadGenGlobals.TForwardMaskOffsets, direction);
+                }
+                else
+                {
+                    if (dirFromLastCell == CellOrientation.West && direction == CellOrientation.South ||
+                        dirFromLastCell == CellOrientation.East && direction == CellOrientation.North ||
+                        dirFromLastCell == CellOrientation.South && direction == CellOrientation.West ||
+                        dirFromLastCell == CellOrientation.North && direction == CellOrientation.West)
+                    {
+                        mask = RotateOffsets(RoadGenGlobals.TUpwardMaskOffsets, direction);
+                    }
+                    else if (dirFromLastCell == CellOrientation.West && direction == CellOrientation.North ||
+                            dirFromLastCell == CellOrientation.East && direction == CellOrientation.South ||
+                            dirFromLastCell == CellOrientation.South && direction == CellOrientation.East ||
+                            dirFromLastCell == CellOrientation.North && direction == CellOrientation.East)
+                    {
+                        mask = RotateOffsets(RoadGenGlobals.TDownwardMaskOffsets, direction);
+                    }
+                }
+                break;
+            case CellFeature.XShapedIntersection:
+                mask = RotateOffsets(RoadGenGlobals.XMaskOffsets, direction);
+                break;
+            default:
+                break;
+        }
+
+        return mask;
+    }
+
+    static (int x, int y)[] RotateOffsets((int x, int y)[] offsets, CellOrientation orientation)
+    {
+        // Rotate 90 degrees clockwise per orientation
+        (int x, int y)[] rotated = new (int, int)[offsets.Length];
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            int x = offsets[i].x;
+            int y = offsets[i].y;
+
+            switch (orientation)
+            {
+                case CellOrientation.East:
+                    rotated[i] = (x, y);
+                    break;
+                case CellOrientation.West:
+                    rotated[i] = (-x, -y);
+                    break;
+                case CellOrientation.North:
+                    rotated[i] = (-y, x);
+                    break;
+                case CellOrientation.South:
+                    rotated[i] = (y, -x);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return rotated;
+    }
 }

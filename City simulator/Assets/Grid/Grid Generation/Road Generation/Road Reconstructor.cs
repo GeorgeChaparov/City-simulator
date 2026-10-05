@@ -13,7 +13,7 @@ public class RoadReconstructor
         
 
         // Check if any intersection or 90 degrees turn have dead ends in a given depth and if so - fix them (remove them).
-        yield return FindAndFixDeadEnd(new Queue<int>(RoadGenGlobals.TurnIndexes), RoadGenGlobals.IStreetsAfterLStreetsBeforeDeadEnd, 2);
+        yield return FindAndFixDeadEnd(new Queue<int>(RoadGenGlobals.LShapedStreetIndexes), RoadGenGlobals.StreetsAfterLStreetsBeforeDeadEnd, 2);
         yield return FindAndFixDeadEnd(new Queue<int>(RoadGenGlobals.TIntersectionIndexes), RoadGenGlobals.StreetsAfterTIntersectionBeforeDeadEnd, 3);
         yield return FindAndFixDeadEnd(new Queue<int>(RoadGenGlobals.XIntersectionIndexes), RoadGenGlobals.StreetsAfterXIntersectionBeforeDeadEnd, 4);
     }
@@ -64,11 +64,11 @@ public class RoadReconstructor
             ConnectDeadEnd();
 
 
-            // Projects froward from the current dead cell and checks if there is another cell in that range that it can connect to.
+            // Projects forward from the current dead cell and checks if there is another cell in that range that it can connect to.
             bool FindConnectionPoint(int currentDepth = 1)
             {
                 // If we hit the depth limit.
-                if (currentDepth > RoadGenGlobals.CellsBetweenRoads + 10)
+                if (currentDepth > RoadGenGlobals.CellsBetweenRoads + RoadGenGlobals.ConnectionRange)
                 {
                     return false;
                 }
@@ -88,45 +88,43 @@ public class RoadReconstructor
                 CellFeature projCellFeature = Cell.GetFeatures(projIndex);
 
 
-                // Determine the list that the cell is a part of based on its feature.
+                // Determine the list that the cell is a part of based on its feature so we can remove it from there once we change it to something else.
 
                 // If the cell is empty.
                 if (projCellFeature == CellFeature.None)
                 {
-                    // Continue with the next cell in the projection path.
-                    if (FindConnectionPoint(++currentDepth))
+                    // Check if there is enough space to place an I shaped street there.
+                    if (GridUtils.CheckForSpace(projDirection, projDirection, CellFeature.IShapedStreet, projIndex, true))
                     {
-                        // If we found cell we can connect to,
-                        // we add the current index to the list of indexes that need to be change in order to connect the two roads.
-                        indexesToChange.Push(projIndex);
+                        // Continue with the next cell in the projection path.
+                        if (FindConnectionPoint(++currentDepth))
+                        {
+                            // If we found cell we can connect to,
+                            // we add the current index to the list of indexes that need to be change in order to connect the two roads.
+                            indexesToChange.Push(projIndex);
 
-                        return true;
+                            return true;
+                        }
                     }
 
                     return false;
                 }
-                else if ((projCellFeature & CellFeature.LShapedStreet) != 0)
+                // We find the list
+                else if (GetRoadList(currentDepth, projCellFeature, projIndex))
                 {
-                    indexesList = RoadGenGlobals.TurnIndexes;
-                }
-                else if ((projCellFeature & CellFeature.XShapedIntersection) != 0)
-                {
-                    indexesList = RoadGenGlobals.XIntersectionIndexes;
-                }
-                else if ((projCellFeature & CellFeature.TShapedIntersection) != 0)
-                {
-                    indexesList = RoadGenGlobals.TIntersectionIndexes;
-                }
-                else if ((projCellFeature & CellFeature.DeadEnd) != 0)
-                {
-                    indexesList = RoadGenGlobals.DeadEndIndexes;
-                    // As we are currently iterating over this list and we are going to remove two of the elements, not only one, we need to decrement by two.
-                    // As we are going to decrement once in the declaration of the loop itself, we need to decrement by one here.
-                    i--;
+                    // And the list happens to be DeadEndIndexes
+                    if (indexesList == RoadGenGlobals.DeadEndIndexes)
+                    {
+                        // As we are currently iterating over this list and we are going to remove two of the elements, not only one, we need to decrement by two.
+                        // As we are going to decrement once in the declaration of the loop itself, we need to decrement by one here.
+                        if (i > 1)
+                        {
+                            i--;
+                        }
+                    }
                 }
                 else
                 {
-                    Debug.LogError($"Unsupported cell feature: {projCellFeature}");
                     return false;
                 }
 
@@ -140,13 +138,90 @@ public class RoadReconstructor
                 return false;
             }
 
+            bool GetRoadList(int currentDepth, CellFeature projCellFeature, int projIndex)
+            {
+                if ((projCellFeature & CellFeature.LShapedStreet) != 0)
+                {
+                    indexesList = RoadGenGlobals.LShapedStreetIndexes;
+                }
+                else if ((projCellFeature & CellFeature.XShapedIntersection) != 0)
+                {
+                    indexesList = RoadGenGlobals.XIntersectionIndexes;
+                }
+                else if ((projCellFeature & CellFeature.TShapedIntersection) != 0)
+                {
+                    indexesList = RoadGenGlobals.TIntersectionIndexes;
+                }
+                else if ((projCellFeature & CellFeature.DeadEnd) != 0)
+                {
+                    indexesList = RoadGenGlobals.DeadEndIndexes;
+                }
+                else if ((projCellFeature & CellFeature.IShapedStreet) != 0 && RoadGenGlobals.ConnectToIShapedStreets)
+                {
+                    if (CheckIStreetConditions(currentDepth, projIndex))
+                    {
+                        indexesList = RoadGenGlobals.IShapedStreetIndexes;
+                    }
+                }
+
+                return indexesList.Count != 0;
+            }
+
+            bool CheckIStreetConditions(int currentDepth, int projIndex)
+            {
+                if (currentDepth > RoadGenGlobals.IShapedStreetConnectionRange)
+                {
+                    return false;
+                }
+
+                if (CheckIDistFromTurnOrIntersections(projIndex))
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            bool CheckIDistFromTurnOrIntersections(int currNeighbor, int lastNeighbor = -1, int neighborIterations = 1)
+            {
+                if (neighborIterations > RoadGenGlobals.IDistanceFromTurnOrIntersection)
+                {
+                    return false;
+                }
+
+                List<int> neighbors = GridGlobals.StreetAdjacencyList[currNeighbor];
+
+                foreach (var nextNeighbor in neighbors)
+                {
+
+                    if (nextNeighbor == lastNeighbor)
+                    {
+                        continue;
+                    }
+
+                    CellFeature neighborFeature = Cell.GetFeatures(nextNeighbor);
+
+                    if ((neighborFeature & CellFeature.LShapedStreet) != 0 ||
+                        (neighborFeature & CellFeature.TShapedIntersection) != 0 ||
+                        (neighborFeature & CellFeature.XShapedIntersection) != 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return CheckIDistFromTurnOrIntersections(nextNeighbor, currNeighbor, ++neighborIterations);
+                    }
+                }
+
+                return false;
+            }
 
             // Connects the current dead cell to the cell we found using by creating new cells on the positions in the list of indexes to change.
             void ConnectDeadEnd()
             {
                 // Update the dead cell to be a I shaped street.
                 Cell.UpdateCell(deadEndIndex, CellType.Street, RoadGenCache.StreetTraverseBaseCost, CellFeature.IShapedStreet, projDirection);
-                deadEndIndexes.Remove(deadEndIndex);
+                deadEndIndexes.RemoveAt(i);
 
                 int lastIndex = deadEndIndex;
 
@@ -174,9 +249,9 @@ public class RoadReconstructor
                     {
                         // That means it is the cell we are trying to connect to.
                         // Update it so that it accounts for multiple neighbors.
-                        UpdateCellOnIndex(index);
+                        UpdateCellToMatchNeighbors(index);
 
-                        // Remove the index from the list with 
+                        // Remove the index from the list. 
                         indexesList.Remove(index);
                     }
 
@@ -232,7 +307,7 @@ public class RoadReconstructor
             if (RemoveDeadEnds(indexToCheck, deadEndRoadsIndexes))
             {
                 // Changing the current cell so that it matches the roads that are left.
-                UpdateCellOnIndex(indexToCheck);
+                UpdateCellToMatchNeighbors(indexToCheck);
             }
         }
 
@@ -334,8 +409,8 @@ public class RoadReconstructor
     }
 
     // Calculates the orientation and the type of the cell based on each adjacent cell
-    private static void UpdateCellOnIndex(int checkedIndex)
-    {
+    private static void UpdateCellToMatchNeighbors(int cellIndex)
+    { 
         CellType newCellType = CellType.Empty;
         CellOrientation newCellOrientation = CellOrientation.None;
         CellFeature newCellFeature = CellFeature.None;
@@ -343,7 +418,7 @@ public class RoadReconstructor
 
         CellOrientation neighborsDirections = CellOrientation.None;
         // Get all neighbors that are left.
-        List<int> neighborIndexes = GridGlobals.StreetAdjacencyList[checkedIndex];
+        List<int> neighborIndexes = GridGlobals.StreetAdjacencyList[cellIndex];
 
         int neighborCount = neighborIndexes.Count;
 
@@ -364,7 +439,7 @@ public class RoadReconstructor
         foreach (var neighborIndex in neighborIndexes)
         {
             // Get there direction in relation to this cell and add it to the flag with directions.
-            neighborsDirections |= GetNeighborDirection(checkedIndex, neighborIndex);
+            neighborsDirections |= GetNeighborDirection(cellIndex, neighborIndex);
         }
 
         // Calculate what exact shape we need based on the directions and count of the neighbors.
@@ -393,7 +468,7 @@ public class RoadReconstructor
         }
 
         // Updating the cell.
-        Cell.UpdateCell(checkedIndex, newCellType, newTraversBaseCost, newCellFeature, newCellOrientation);
+        Cell.UpdateCell(cellIndex, newCellType, newTraversBaseCost, newCellFeature, newCellOrientation);
 
         #region Helper functions
 

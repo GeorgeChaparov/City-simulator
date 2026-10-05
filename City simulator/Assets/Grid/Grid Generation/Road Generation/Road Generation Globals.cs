@@ -40,27 +40,39 @@ public class RoadGenGlobals
     /// </summary>
     public static float IStreetLikelihood = 0.5f;
 
-    public static int IShapedStreetsCount = 0;
-    public static int LShapedStreetsCount = 0;
     public static int TotalCellCount = 1;
 
     public static List<int> TIntersectionIndexes = new List<int>();
     public static List<int> XIntersectionIndexes = new List<int>();
-    public static List<int> TurnIndexes = new List<int>();
+    public static List<int> IShapedStreetIndexes = new List<int>();
+    public static List<int> LShapedStreetIndexes = new List<int>();
     public static List<int> DeadEndIndexes = new List<int>();
 
+
+    //              Reconstruction
     public static int StreetsAfterXIntersectionBeforeDeadEnd = 10;
     public static int StreetsAfterTIntersectionBeforeDeadEnd = 10;
-    public static int IStreetsAfterLStreetsBeforeDeadEnd = 10;
+    public static int StreetsAfterLStreetsBeforeDeadEnd = 10;
+
+    public static int ConnectionRange = 10;
+    public static bool ConnectToIShapedStreets = false;
+    public static int IShapedStreetConnectionRange = 10;
+    public static int IDistanceFromTurnOrIntersection = 5;
+
+
 
     public static int StepCounter = 0;
 
+
+    //              Masks
     public static (int x, int y)[] IMaskOffsets;
     public static (int x, int y)[] LForwardMaskOffsets;
     public static (int x, int y)[] LBackwardMaskOffsets;
-
     public static (int x, int y)[] TForwardMaskOffsets;
     public static (int x, int y)[] TUpwardMaskOffsets;
     public static (int x, int y)[] TDownwardMaskOffsets;
     public static (int x, int y)[] XMaskOffsets;
+
+    //Reconstruction
+    public static (int x, int y)[] IReconstructionMaskOffsets;
 }

@@ -90,9 +90,25 @@ public class GridManager : MonoBehaviour
     [SerializeField]
     private int streetsAfterTIntersectionBeforeDeadEnd = 10;
 
-    [Tooltip("The amount of I shaped streets, after given L shaped street, before a dead end, after which we will just replace the L shaped street with a dead end and remove everything after that branch")]
+    [Tooltip("The amount of streets, after given L shaped street, before a dead end, after which we will just replace the L shaped street with a dead end and remove everything after that branch")]
     [SerializeField]
-    private int IStreetsAfterLStreetsBeforeDeadEnd = 10;
+    private int streetsAfterLStreetsBeforeDeadEnd = 10;
+
+    [Tooltip("The range to project in to find points to connect a dead end to.")]
+    [SerializeField]
+    private int connectionRange = 10;
+
+    [Tooltip("Should the dead ends be able to connect to I shaped streets")]
+    [SerializeField]
+    private bool connectToIShapedStreets = false;
+
+    [Tooltip("That number shows in what range I shaped streets will be considered as an option during reconstruction.")]
+    [SerializeField]
+    private int iShapedStreetConnectionRange = 10;
+
+    [Tooltip("That number shows how close to an intersection or a turn can the found I shaped street be in order to be considered for connection.")]
+    [SerializeField]
+    private int iDistanceFromTurnOrIntersection = 5;
 
     private float lastTIntersectionLikelihood = 0.5f;
     private float lastXIntersectionLikelihood = 0.5f;
@@ -170,7 +186,8 @@ public class GridManager : MonoBehaviour
         GridGenerator.Init(minStreetsWithoutIntersection, maxStreetsWithoutIntersection, maxTurnsBetweenIntersection,
             minStreetsBetweenTurns, minStreetsBeforeFirstTurn, cellsBetweenRoads, allowedConsecutiveTurnsInSameOrientation,
             xIntersectionLikelihood, preventLoopAroundTurns, iStreetLikelihood, streetsAfterXIntersectionBeforeDeadEnd,
-            streetsAfterTIntersectionBeforeDeadEnd, IStreetsAfterLStreetsBeforeDeadEnd);
+            streetsAfterTIntersectionBeforeDeadEnd, streetsAfterLStreetsBeforeDeadEnd, connectionRange, connectToIShapedStreets,
+            iShapedStreetConnectionRange, iDistanceFromTurnOrIntersection);
     }
 
     private void StartGeneration()
